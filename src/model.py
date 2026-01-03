@@ -1,0 +1,147 @@
+import threading
+import fastapi
+import asyncio
+import itertools
+from typing import Iterator, Annotated
+from .datatypes import Player, Day, Route, GameStatus, Square, void_player, StatusDict
+
+
+def in_progress(error_message: str):
+    def decorator(func):
+        def wrapper(self, *args, **kwargs):
+            if self.status != GameStatus.IN_PROGRESS:
+                return func(self, *args, **kwargs)
+            raise RuntimeError(error_message) 
+        return wrapper
+    return decorator
+
+
+class GameModel:
+    def __init__(self):
+        self.day_count = 1
+        self.current_player = void_player
+        self.lock = threading.Lock()
+        self.status: GameStatus = GameStatus.NOT_STARTED
+        self.player_iterator: Iterator[tuple[int, Player]] = itertools.cycle(enumerate([void_player]))
+        self.players: list[Player] = []
+        self.calendar: list[Day] = []
+        self.routes: list[Route] = []
+
+    def start_game(self):
+        if self.status == GameStatus.NOT_STARTED:
+            self.status = GameStatus.IN_PROGRESS
+            self.player_iterator = itertools.cycle(enumerate(self.players))
+            _, self.current_player = next(self.player_iterator)
+        else:
+            raise RuntimeError("Game already started or completed.")
+        
+    @in_progress("Cannot add players after the game has started.")
+    def add_player(self, player: Player):
+        with self.lock:
+            self.players.append(player)
+
+    @in_progress("Cannot remove players after the game has started.")
+    def remove_player(self, player_id: str):
+        with self.lock:
+            self.players = [p for p in self.players if p.id != player_id]
+
+    @in_progress("Cannot modify players after the game has started.")
+    def modify_player(self, player_id: str, new_player: Player):
+        with self.lock:
+            try:
+                player = [p for p in self.players if p.id == player_id][0]
+                index = self.players.index(player)
+                self.players[index] = new_player
+                new_player.id = player_id
+            except IndexError:
+                raise RuntimeError("Player not found.")
+
+    def get_players(self) -> list[Player]:
+        return self.players.copy()
+    
+    def get_squares(self) -> list[Square]:
+        return [square for square in Square]
+    
+    def get_routes(self) -> list[Route]:
+        return self.routes.copy()
+    
+    def add_route(self, route: Route):
+        with self.lock:
+            self.routes.append(route)
+
+    def remove_route(self, route: Route):
+        with self.lock:
+            self.routes = [r for r in self.routes if r != route]
+
+    def get_calendar(self) -> list[Day]:
+        return self.calendar.copy()
+    
+    @in_progress("Cannot modify calendar after the game has started.")
+    def add_day(self, day: Day):
+        with self.lock:
+            self.calendar.append(day)
+    
+    @in_progress("Cannot modify calendar after the game has started.")
+    def remove_day(self, day_number: int):
+        with self.lock:
+            self.calendar = [day for index, day in enumerate(self.calendar) if index+1 != day_number]
+
+    @in_progress("Cannot modify calendar after the game has started.")
+    def modify_day(self, day_number: int, new_day: Day):
+        with self.lock:
+            if 0 < day_number <= len(self.calendar):
+                self.calendar[day_number - 1] = new_day
+            else:
+                raise IndexError("Day number out of range.")
+
+    def game_status(self) -> StatusDict:
+        return {
+            "status": self.status,
+            "day_count": self.day_count,
+            "current_player": self.current_player
+        }
+    
+    @in_progress("Cannot move players when the game is not in progress.")
+    def move_player(self, player_id: int, new_position: Square):
+        with self.lock:
+            try:
+                player = [p for p in self.players if p.id == player_id][0]
+            except IndexError:
+                raise RuntimeError("Player not found.")
+            
+            if self.status != GameStatus.IN_PROGRESS:
+                raise RuntimeError("Game is not in progress.")
+            if player != self.current_player:
+                raise RuntimeError("It's not this player's turn.")
+            
+            player.position = new_position
+            index, self.current_player = next(self.player_iterator)
+            if index == 0:
+                self.day_count += 1
+                if self.day_count > len(self.calendar):
+                    self.status = GameStatus.COMPLETED
+
+    def get_event(self, request: fastapi.Request):
+        async def event_generator():
+            day = self.day_count
+            while True:
+                if await request.is_disconnected():
+                    break
+
+                if day != self.day_count:
+                    yield {"event": "new_day", "data": self.day_count}
+                    day = self.day_count
+
+                if self.status == GameStatus.COMPLETED:
+                    yield {"event": "game_finished", "data": "The game has finished."}
+                    break
+
+                await asyncio.sleep(0.5)
+        return event_generator()
+            
+_game_model = GameModel()
+
+def get_game_model() -> GameModel:
+    return _game_model
+
+GameModelDep = Annotated[GameModel, fastapi.Depends(get_game_model)]
