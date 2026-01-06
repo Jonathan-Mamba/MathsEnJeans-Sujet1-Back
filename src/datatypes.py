@@ -5,7 +5,7 @@ import typing
 
 class Day(enum.StrEnum):
     LIVRAISON = "livraison"
-    DOLEANCES = "doleancs"
+    DOLEANCES = "doleances"
     MARCHANDS = "marchands"
     LABEUR = "labeur"
 
@@ -35,7 +35,7 @@ class Route(pydantic.BaseModel):
     type: RouteType
     
 class Player(pydantic.BaseModel):
-    id: str = str(uuid.uuid4())
+    id: uuid.UUID = pydantic.Field(default_factory=lambda: uuid.uuid4())
     name: str = ""
     position: Square = Square.NONE
 

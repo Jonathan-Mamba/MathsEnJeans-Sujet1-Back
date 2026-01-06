@@ -1,4 +1,5 @@
 import fastapi
+import uuid
 from .datatypes import Square, StatusDict
 from .model import GameModelDep
 from sse_starlette.sse import EventSourceResponse
@@ -10,7 +11,7 @@ async def get_game_status(game_model: GameModelDep):
     return game_model.game_status()
 
 @router.post("/move_player")
-async def move_player(player_id: int, new_position: str, game_model: GameModelDep):
+async def move_player(player_id: uuid.UUID, new_position: str, game_model: GameModelDep):
     try:
         game_model.move_player(player_id, Square(new_position))
     except RuntimeError as e:
