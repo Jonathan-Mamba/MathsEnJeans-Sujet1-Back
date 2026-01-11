@@ -17,7 +17,7 @@ app.include_router(game.router)
 
 origins = [
     "http://localhost:5173",
-    "http://localhost:8000",
+    "http://localhost:*",
 ]
 app.add_middleware(
     CORSMiddleware,

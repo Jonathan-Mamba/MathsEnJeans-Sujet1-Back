@@ -16,7 +16,7 @@ async def add_day(day_type: Day, game_model: GameModelDep):
         game_model.add_day(day_type)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return {"message": "Day added successfully."}
+    return "Day added successfully."
 
 @router.put("/")
 async def modify_day(day_number: int, new_day: Day, game_model: GameModelDep):
@@ -24,8 +24,9 @@ async def modify_day(day_number: int, new_day: Day, game_model: GameModelDep):
         game_model.modify_day(day_number, new_day)
     except IndexError as e:
         raise HTTPException(400, str(e))
-    return {"message": "Day modified successfully."}
+    return "Day modified successfully."
     
 @router.delete("/")
-async def delete_day(day_number: int,game_model: GameModelDep):
+async def delete_day(day_number: int, game_model: GameModelDep):
     game_model.remove_day(day_number)
+    return "Day removed successfully."

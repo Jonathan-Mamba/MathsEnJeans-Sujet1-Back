@@ -4,7 +4,7 @@ import asyncio
 import itertools
 import uuid
 from typing import Iterator, Annotated
-from .datatypes import Player, Day, Route, GameStatus, Square, void_player, StatusDict
+from .datatypes import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType
 
 
 def in_progress(error_message: str):
@@ -27,7 +27,7 @@ class GameModel:
         self.player_iterator: Iterator[tuple[int, Player]] = itertools.cycle(enumerate([void_player]))
         self.players: list[Player] = []
         self.calendar: list[Day] = []
-        self.routes: list[Route] = []
+        self.routes: set[Route] = set()
 
     @in_progress("Game has already started.")
     def start_game(self):        
@@ -45,7 +45,14 @@ class GameModel:
         
     @in_progress("Cannot add players after the game has started.")
     def add_player(self, player: Player):
-        self.players.append(player)
+        if player.position == Square.NONE:
+            raise RuntimeError("Player must have a valid starting position.")    
+        try:
+            self.get_player(player.id)
+        except RuntimeError:
+            self.players.append(player)
+        else:
+            raise RuntimeError("Player with this ID already exists.")
 
     @in_progress("Cannot remove players after the game has started.")
     def remove_player(self, player_id: uuid.UUID):
@@ -53,30 +60,44 @@ class GameModel:
 
     @in_progress("Cannot modify players after the game has started.")
     def modify_player(self, player_id: uuid.UUID, new_player: Player):
-        try:
-            player = [p for p in self.players if p.id == player_id][0]    
-            index = self.players.index(player)
-            self.players[index] = new_player
-            new_player.id = player_id
-        except IndexError:
-            raise RuntimeError("Player not found.")
+        if new_player.position == Square.NONE:
+            raise RuntimeError("Player must have a valid starting position.")   
+         
+        player = self.get_player(player_id)  
+        index = self.players.index(player)
+        self.players[index] = new_player
+        new_player.id = player_id
 
     def get_players(self) -> list[Player]:
         return self.players.copy()
     
+    def get_player(self, player_id: uuid.UUID) -> Player:
+        try:
+            return [p for p in self.players if p.id == player_id][0]    
+        except IndexError:
+            raise RuntimeError("Player not found.")
+    
     def get_squares(self) -> list[Square]:
         return [square for square in Square]
     
-    def get_routes(self) -> list[Route]:
-        return self.routes.copy()
+    def get_all_routes(self) -> list[Route]:
+        return list(self.routes)
     
+    @in_progress("Cannot modify routes after the game has started.")
     def add_route(self, route: Route):
-        with self.lock:
-            self.routes.append(route)
+        if route.first_end == Square.NONE or route.second_end == Square.NONE:
+            raise RuntimeError("Route must have valid endpoints.")
+        self.routes.add(route)
+
+    def get_bound_routes(self, square: Square) -> set[Route]:
+        return {
+            route for route in self.routes 
+            if (route.first_end == square or route.second_end == square)
+            }
 
     def remove_route(self, route: Route):
         with self.lock:
-            self.routes = [r for r in self.routes if r != route]
+            self.routes.remove(route)
 
     def get_calendar(self) -> list[Day]:
         return self.calendar.copy()
@@ -90,9 +111,9 @@ class GameModel:
         self.calendar = [day for index, day in enumerate(self.calendar) if index+1 != day_number]
 
     @in_progress("Cannot modify calendar after the game has started.")
-    def modify_day(self, day_number: int, new_day: Day):
+    def modify_day(self, day_number: int, new_day_type: Day):
         if 0 < day_number <= len(self.calendar):
-            self.calendar[day_number - 1] = new_day
+            self.calendar[day_number - 1] = new_day_type
         else:
             raise IndexError("Day number out of range.")
 
@@ -103,17 +124,23 @@ class GameModel:
             "current_player": self.current_player
         }
     
-    @in_progress("Cannot move players when the game is not in progress.")
     def move_player(self, player_id: uuid.UUID, new_position: Square):
+        if self.status != GameStatus.IN_PROGRESS:
+            raise RuntimeError("Cannot move players when the game is not in progress.")
+        
         try:
             player = [p for p in self.players if p.id == player_id][0]
         except IndexError:
             raise RuntimeError("Player not found.")
 
-        if self.status != GameStatus.IN_PROGRESS:
-            raise RuntimeError("Game is not in progress.")
         if player != self.current_player:
             raise RuntimeError("It's not this player's turn.")
+        
+        route_type = self.calendar[self.day_count - 1]
+        routes = self.get_bound_routes(player.position) & self.get_bound_routes(new_position)
+        routes = {route for route in routes if (route.type == RouteType.TOUT or route.type == route_type)}
+        if not routes:
+            raise RuntimeError("No valid route between the two squares.")
 
         player.position = new_position
         index, self.current_player = next(self.player_iterator)

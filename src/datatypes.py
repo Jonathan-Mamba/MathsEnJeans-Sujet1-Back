@@ -30,14 +30,22 @@ class GameStatus(enum.StrEnum):
     COMPLETED = "completed"    
 
 class Route(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(frozen=True)
     first_end: Square
     second_end: Square
     type: RouteType
+
+    def __hash__(self) -> int:
+        return hash((self.first_end, self.second_end, self.type))
     
 class Player(pydantic.BaseModel):
+    #model_config = pydantic.ConfigDict(frozen=True)
     id: uuid.UUID = pydantic.Field(default_factory=lambda: uuid.uuid4())
     name: str = ""
     position: Square = Square.NONE
+
+    def __hash__(self) -> int:
+        return hash(self.id.int)
 
 void_player = Player(name="Void Player")
 

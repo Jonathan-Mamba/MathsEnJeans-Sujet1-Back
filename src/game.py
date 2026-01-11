@@ -11,12 +11,12 @@ async def get_game_status(game_model: GameModelDep):
     return game_model.game_status()
 
 @router.post("/move_player")
-async def move_player(player_id: uuid.UUID, new_position: str, game_model: GameModelDep):
+async def move_player(player_id: uuid.UUID, new_position: Square, game_model: GameModelDep):
     try:
-        game_model.move_player(player_id, Square(new_position))
+        game_model.move_player(player_id, new_position)
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
-    return {"message": "Player moved successfully."}
+    return "Player moved successfully."
 
 @router.post("/start")
 async def start_game(game_model: GameModelDep):
@@ -24,7 +24,7 @@ async def start_game(game_model: GameModelDep):
         game_model.start_game()
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
-    return {"message": "Game started successfully."}
+    return "Game started successfully."
 
 @router.get("/events")
 async def game_events(request: fastapi.Request, game_model: GameModelDep):
