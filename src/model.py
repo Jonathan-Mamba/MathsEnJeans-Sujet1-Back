@@ -121,7 +121,8 @@ class GameModel:
         return {
             "status": self.status,
             "day_count": self.day_count,
-            "current_player": self.current_player
+            "current_player": self.current_player,
+            "current_day_type": self.calendar[self.day_count - 1] if self.status == GameStatus.IN_PROGRESS else None
         }
     
     def move_player(self, player_id: uuid.UUID, new_position: Square):

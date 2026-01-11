@@ -53,3 +53,4 @@ class StatusDict(typing.TypedDict):
     status: GameStatus
     day_count: int
     current_player: Player
+    current_day_type: Day | None
