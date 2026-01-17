@@ -10,10 +10,9 @@ from .datatypes import Player, Day, Route, GameStatus, Square, void_player, Stat
 def in_progress(error_message: str):
     def decorator(func):
         def wrapper(self: 'GameModel', *args, **kwargs):
-            with self.lock:
-                if self.status != GameStatus.IN_PROGRESS:
-                    return func(self, *args, **kwargs)
-                raise RuntimeError(error_message) 
+            if self.status != GameStatus.IN_PROGRESS:
+                return func(self, *args, **kwargs)
+            raise RuntimeError(error_message) 
         return wrapper
     return decorator
 
@@ -22,7 +21,6 @@ class GameModel:
     def __init__(self):
         self.day_count = 1
         self.current_player = void_player
-        self.lock = threading.Lock()
         self.status: GameStatus = GameStatus.NOT_STARTED
         self.player_iterator: Iterator[tuple[int, Player]] = itertools.cycle(enumerate([void_player]))
         self.players: list[Player] = []
@@ -96,8 +94,7 @@ class GameModel:
             }
 
     def remove_route(self, route: Route):
-        with self.lock:
-            self.routes.remove(route)
+        self.routes.remove(route)
 
     def get_calendar(self) -> list[Day]:
         return self.calendar.copy()
@@ -168,9 +165,3 @@ class GameModel:
                 await asyncio.sleep(0.5)
         return event_generator()
             
-_game_model = GameModel()
-
-def get_game_model() -> GameModel:
-    return _game_model
-
-GameModelDep = Annotated[GameModel, fastapi.Depends(get_game_model)]
