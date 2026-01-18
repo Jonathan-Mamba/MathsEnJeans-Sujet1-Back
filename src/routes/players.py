@@ -9,12 +9,12 @@ router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get("/", summary="Get all players", response_model=List[Player])
-async def get_all_players(controller: ControllerDep):
+def get_all_players(controller: ControllerDep):
     return controller.get_players()
 
 
 @router.post("/", summary="Add a new player")
-async def add_player(name: str, controller: ControllerDep, position: Square):
+def add_player(name: str, controller: ControllerDep, position: Square):
     try:
         controller.add_player(Player(name=name, position=Square(position), id=uuid.uuid4()))
     except RuntimeError or ValueError as e:
@@ -23,7 +23,7 @@ async def add_player(name: str, controller: ControllerDep, position: Square):
 
 
 @router.put("/", summary="Update a player's data")
-async def update_player(player_id: uuid.UUID, new_name: str, new_position: Square, controller: ControllerDep):
+def update_player(player_id: uuid.UUID, new_name: str, new_position: Square, controller: ControllerDep):
     try:
         controller.modify_player(player_id, Player(name=new_name, position=new_position, id=player_id))
     except RuntimeError as e:
@@ -32,7 +32,7 @@ async def update_player(player_id: uuid.UUID, new_name: str, new_position: Squar
 
 
 @router.delete("/", summary="Remove a player")
-async def remove_player(player_id: uuid.UUID, controller: ControllerDep):
+def remove_player(player_id: uuid.UUID, controller: ControllerDep):
     try:
         controller.remove_player(player_id)
     except RuntimeError as e:
