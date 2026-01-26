@@ -27,20 +27,7 @@ class GameModel:
         self.calendar: list[Day] = []
         self.routes: set[Route] = set()
 
-    @in_progress("Game has already started.")
-    def start_game(self):        
-        if not self.players:
-            raise RuntimeError("Cannot start game without players.")
-        if not self.calendar:
-            raise RuntimeError("Cannot start game without a calendar.") 
-        if not self.routes:
-            raise RuntimeError("Cannot start game without routes.")
-        
-        self.status = GameStatus.IN_PROGRESS
-        self.player_iterator = itertools.cycle(enumerate(self.players))
-        index, self.current_player = next(self.player_iterator)
-
-        
+   # Player methods    
     @in_progress("Cannot add players after the game has started.")
     def add_player(self, player: Player):
         if player.position == Square.NONE:
@@ -78,6 +65,7 @@ class GameModel:
     def get_squares(self) -> list[Square]:
         return [square for square in Square]
     
+    # Route methods
     def get_all_routes(self) -> list[Route]:
         return list(self.routes)
     
@@ -96,6 +84,7 @@ class GameModel:
     def remove_route(self, route: Route):
         self.routes.remove(route)
 
+    # Calendar methods
     def get_calendar(self) -> list[Day]:
         return self.calendar.copy()
     
@@ -114,6 +103,7 @@ class GameModel:
         else:
             raise IndexError("Day number out of range.")
 
+    # Game methods
     def game_status(self) -> StatusDict:
         return {
             "status": self.status,
@@ -164,4 +154,17 @@ class GameModel:
 
                 await asyncio.sleep(0.5)
         return event_generator()
+    
+    @in_progress("Game has already started.")
+    def start_game(self):        
+        if not self.players:
+            raise RuntimeError("Cannot start game without players.")
+        if not self.calendar:
+            raise RuntimeError("Cannot start game without a calendar.") 
+        if not self.routes:
+            raise RuntimeError("Cannot start game without routes.")
+        
+        self.status = GameStatus.IN_PROGRESS
+        self.player_iterator = itertools.cycle(enumerate(self.players))
+        index, self.current_player = next(self.player_iterator)
             
