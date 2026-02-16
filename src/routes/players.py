@@ -1,8 +1,8 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from typing import List
-from ..controller import ControllerDep
-from ..datatypes import Player, Square
+from src.controller import ControllerDep
+from src.datatypes import Player, Square
 
 
 router = APIRouter(prefix="/players", tags=["players"])
@@ -25,7 +25,7 @@ def add_player(name: str, controller: ControllerDep, position: Square):
 @router.put("/", summary="Update a player's data")
 def update_player(player_id: uuid.UUID, new_name: str, new_position: Square, controller: ControllerDep):
     try:
-        controller.modify_player(player_id, Player(name=new_name, position=new_position, id=player_id))
+        controller.modify_player(player_id, new_name, new_position)
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player updated successfully."

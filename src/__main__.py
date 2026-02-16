@@ -1,10 +1,9 @@
 import fastapi
 import uvicorn
-from .routes import calendar
-from .routes import players
-from .routes import routes
-from .routes import squares
-from .routes import game
+import sys
+from os.path import dirname, abspath
+sys.path.append(dirname(dirname(abspath(__file__))))
+from src.routes import calendar, players, routes, squares, game
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -18,6 +17,7 @@ app.include_router(game.router)
 origins = [
     "http://localhost:5173",
     "http://localhost:*",
+    "https://localhost:*"
 ]
 app.add_middleware(
     CORSMiddleware,

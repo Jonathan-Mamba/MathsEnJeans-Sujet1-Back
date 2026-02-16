@@ -1,7 +1,7 @@
 import threading
 from uuid import UUID
-from .datatypes import Player, Square, Route, Day, StatusDict
-from .model import GameModel
+from src.datatypes import Player, Square, Route, Day, StatusDict, RouteType
+from src.model import GameModel
 from fastapi import Depends
 from typing import Annotated
 
@@ -34,14 +34,15 @@ class Controller:
         with self._players_lock:
             self._game_model.add_player(player)
 
-    def modify_player(self, player_id: UUID, new_player: Player):
+    def modify_player(self, player_id: UUID, new_name: str, new_position: Square):
         with self._players_lock:
-            self._game_model.modify_player(player_id, new_player)
+            self._game_model.modify_player(player_id, new_name, new_position)
     
     def remove_player(self, player_id: UUID):
         with self._players_lock:
             self._game_model.remove_player(player_id)
 
+    # Square methods
     def get_squares(self) -> list[Square]:
         return self._game_model.get_squares()
     
@@ -56,6 +57,9 @@ class Controller:
     def remove_route(self, route: Route):
         with self._routes_lock:
             self._game_model.remove_route(route)
+
+    def get_route_types(self) -> list[RouteType]:
+        return self._game_model.get_route_types()
 
     # Calendar methods
     def get_calendar(self) -> list[Day]:
@@ -74,10 +78,13 @@ class Controller:
         with self._caldendar_lock:
             self._game_model.modify_day(day_number, new_day)
 
-controller = Controller()
+    def get_day_types(self) -> list[Day]:
+        return self._game_model.get_day_types()
+
+_controller = Controller()
 
 def get_controller() -> Controller:
-    return controller
+    return _controller
 
 ControllerDep = Annotated[Controller, Depends(get_controller)]
 

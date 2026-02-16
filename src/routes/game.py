@@ -1,7 +1,7 @@
 import fastapi
 import uuid
-from ..datatypes import Square, StatusDict
-from ..controller import ControllerDep
+from src.datatypes import Square, StatusDict
+from src.controller import ControllerDep
 from sse_starlette.sse import EventSourceResponse
 
 router = fastapi.APIRouter(prefix="/game", tags=["game"])

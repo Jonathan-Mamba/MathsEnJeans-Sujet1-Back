@@ -22,7 +22,6 @@ class Square(enum.StrEnum):
     MARCHANDS = "quartier_marchands"
     GARDES = "salle_gardes"
     PALAIS = "palais"
-    NONE = "none"
 
 class GameStatus(enum.StrEnum):
     NOT_STARTED = "not_started"
@@ -39,10 +38,10 @@ class Route(pydantic.BaseModel):
         return hash((self.first_end, self.second_end, self.type))
     
 class Player(pydantic.BaseModel):
-    #model_config = pydantic.ConfigDict(frozen=True)
+    model_config = pydantic.ConfigDict(frozen=True)
     id: uuid.UUID = pydantic.Field(default_factory=lambda: uuid.uuid4())
     name: str = ""
-    position: Square = Square.NONE
+    position: Square | None = None
 
     def __hash__(self) -> int:
         return hash(self.id.int)
