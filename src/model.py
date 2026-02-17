@@ -4,7 +4,7 @@ import itertools
 import uuid
 from typing import Iterator
 from functools import wraps
-from src.datatypes import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType
+from src.datatypes import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color
 
 
 def in_progress(error_message: str):
@@ -22,11 +22,12 @@ class GameModel:
     def __init__(self):
         self.day_count = 1
         self.current_player = void_player
-        self.status: GameStatus = GameStatus.NOT_STARTED
-        self.player_iterator: Iterator[tuple[int, Player]] = itertools.cycle(enumerate([void_player]))
+        self.status = GameStatus.NOT_STARTED
+        self.player_iterator = itertools.cycle(enumerate([void_player]))
         self.players_dict: dict[uuid.UUID, Player] = {}
         self.calendar: list[Day] = []
         self.routes: set[Route] = set()
+        self.route_types = {i: get_random_color() for i in RouteType}
 
    # Player methods    
     @in_progress("Cannot add players after the game has started.")
@@ -87,8 +88,8 @@ class GameModel:
     def remove_route(self, route: Route):
         self.routes.remove(route)
 
-    def get_route_types(self) -> list[RouteType]:
-        return [route_type for route_type in RouteType]
+    def get_route_types(self) -> dict[RouteType, str]:
+        return self.route_types
 
     # Calendar methods
     def get_calendar(self) -> list[Day]:
@@ -145,6 +146,7 @@ class GameModel:
     def get_event(self, request: fastapi.Request):
         async def event_generator():
             day = self.day_count
+            player = self.current_player.model_copy()
             while True:
                 if await request.is_disconnected():
                     break
@@ -156,6 +158,10 @@ class GameModel:
                 if self.status == GameStatus.COMPLETED:
                     yield {"event": "game_finished", "data": "The game has finished."}
                     break
+
+                if player != self.current_player:
+                    yield {"event": "player_moved", "data": self.current_player}
+                    player = self.current_player.model_copy()
 
                 await asyncio.sleep(0.5)
         return event_generator()

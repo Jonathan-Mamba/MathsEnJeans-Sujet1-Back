@@ -8,7 +8,7 @@ router = APIRouter(prefix="/routes", tags=["routes"])
 def get_all_routes(controller: ControllerDep):
     return controller.get_all_routes()
 
-@router.get("/types", summary="Get all route types", response_model=list[RouteType])
+@router.get("/types", summary="Get all route types, and their colors", response_model=dict[RouteType, str])
 def get_route_types(controller: ControllerDep):
     return controller.get_route_types()
 

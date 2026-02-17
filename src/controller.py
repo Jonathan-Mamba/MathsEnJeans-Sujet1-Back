@@ -58,7 +58,7 @@ class Controller:
         with self._routes_lock:
             self._game_model.remove_route(route)
 
-    def get_route_types(self) -> list[RouteType]:
+    def get_route_types(self) -> dict[RouteType, str]:
         return self._game_model.get_route_types()
 
     # Calendar methods

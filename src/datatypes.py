@@ -2,31 +2,35 @@ import enum
 import uuid
 import pydantic
 import typing
+import random
 
 class Day(enum.StrEnum):
-    LIVRAISON = "livraison"
-    DOLEANCES = "doleances"
-    MARCHANDS = "marchands"
-    LABEUR = "labeur"
+    LIVRAISON = "Livraison"
+    DOLEANCES = "Doléances"
+    MARCHANDS = "Marchands"
+    LABEUR = "Labeur"
 
 class RouteType(enum.StrEnum):
-    LIVRAISON = "livraison"
-    DOLEANCES = "doleances"
-    MARCHANDS = "marchands"
-    LABEUR = "labeur"
-    TOUT = "tout"
+    LIVRAISON = "Livraison"
+    DOLEANCES = "Doléances"
+    MARCHANDS = "Marchands"
+    LABEUR = "Labeur"
+    TOUT = "Tout"
 
 class Square(enum.StrEnum):
-    ENTREPOTS = "entrepots_royaux"
-    ARTISANTS = "quartier_artisants"
-    MARCHANDS = "quartier_marchands"
-    GARDES = "salle_gardes"
-    PALAIS = "palais"
+    ENTREPOTS = "Entrepôts royaux"
+    ARTISANTS = "Quartier des artisants"
+    MARCHANDS = "Quartier des marchands"
+    GARDES = "Salle des gardes"
+    PALAIS = "Palais"
 
 class GameStatus(enum.StrEnum):
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"    
+
+def get_random_color() -> str:
+    return f"#{random.randint(0, 0xFFFFFF).to_bytes(3).hex()}".upper()
 
 class Route(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(frozen=True)
@@ -42,9 +46,7 @@ class Player(pydantic.BaseModel):
     id: uuid.UUID = pydantic.Field(default_factory=lambda: uuid.uuid4())
     name: str = ""
     position: Square | None = None
-
-    def __hash__(self) -> int:
-        return hash(self.id.int)
+    color: str = pydantic.Field(default_factory=get_random_color)
 
 void_player = Player(name="Void Player")
 
@@ -53,3 +55,5 @@ class StatusDict(typing.TypedDict):
     day_count: int
     current_player: Player
     current_day_type: Day | None
+
+
