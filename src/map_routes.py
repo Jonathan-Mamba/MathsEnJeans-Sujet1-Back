@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from src.controller import ControllerDep
-from src.datatypes import Route, Square, RouteType
+from controller import ControllerDep
+from util import Route, Square, RouteType
 
 router = APIRouter(prefix="/routes", tags=["routes"])
 
@@ -11,6 +11,10 @@ def get_all_routes(controller: ControllerDep):
 @router.get("/types", summary="Get all route types, and their colors", response_model=dict[RouteType, str])
 def get_route_types(controller: ControllerDep):
     return controller.get_route_types()
+
+@router.get("/types/all", summary="Get the name of route type that contains all of the routes.", response_model=str)
+def get_route_type_all(controller: ControllerDep):
+    return controller.get_route_type_all()
 
 @router.post("/", summary="Add a new route")
 def add_route(first_end: Square, second_end: Square, route_type: RouteType, controller: ControllerDep):

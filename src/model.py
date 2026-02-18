@@ -4,7 +4,7 @@ import itertools
 import uuid
 from typing import Iterator
 from functools import wraps
-from src.datatypes import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color
+from util import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color, ROUTE_ALL
 
 
 def in_progress(error_message: str):
@@ -28,6 +28,7 @@ class GameModel:
         self.calendar: list[Day] = []
         self.routes: set[Route] = set()
         self.route_types = {i: get_random_color() for i in RouteType}
+        self.route_type_all = ROUTE_ALL
 
    # Player methods    
     @in_progress("Cannot add players after the game has started.")
@@ -75,9 +76,12 @@ class GameModel:
     
     @in_progress("Cannot modify routes after the game has started.")
     def add_route(self, route: Route):
-        if route.first_end is None or route.second_end is None:
-            raise RuntimeError("Route must have valid endpoints.")
-        self.routes.add(route)
+        route_type_all = {
+            r for r in (self.get_bound_routes(route.first_end) & self.get_bound_routes(route.second_end))
+            if r.type == self.route_type_all 
+        }
+        if not route_type_all:
+            self.routes.add(route)
 
     def get_bound_routes(self, square: Square | None) -> set[Route]:
         return {
@@ -90,6 +94,9 @@ class GameModel:
 
     def get_route_types(self) -> dict[RouteType, str]:
         return self.route_types
+    
+    def get_route_type_all(self) -> str:
+        return self.route_type_all
 
     # Calendar methods
     def get_calendar(self) -> list[Day]:
@@ -132,7 +139,7 @@ class GameModel:
         
         route_type = self.calendar[self.day_count - 1]
         routes = self.get_bound_routes(player.position) & self.get_bound_routes(new_position)
-        routes = {route for route in routes if (route.type == RouteType.TOUT or route.type == route_type)}
+        routes = {route for route in routes if (route.type == self.route_type_all or route.type == route_type)}
         if not routes:
             raise RuntimeError("No valid route between the two squares.")
 
@@ -163,7 +170,7 @@ class GameModel:
                     yield {"event": "player_moved", "data": self.current_player}
                     player = self.current_player.model_copy()
 
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.1)
         return event_generator()
     
     @in_progress("Game has already started.")

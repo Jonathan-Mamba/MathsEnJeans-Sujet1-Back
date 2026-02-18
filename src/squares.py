@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from src.controller import ControllerDep
-from src.datatypes import Square
+from controller import ControllerDep
+from util import Square
 
 router = APIRouter(prefix="/squares", tags=["squares"])
 

@@ -1,7 +1,7 @@
 import fastapi
 from fastapi import HTTPException
-from src.controller import ControllerDep
-from src.datatypes import Day
+from controller import ControllerDep
+from util import Day
 from typing import List
 
 router = fastapi.APIRouter(prefix="/calendar", tags=["calendar"])

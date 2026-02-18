@@ -17,6 +17,8 @@ class RouteType(enum.StrEnum):
     LABEUR = "Labeur"
     TOUT = "Tout"
 
+ROUTE_ALL: str = RouteType.TOUT
+
 class Square(enum.StrEnum):
     ENTREPOTS = "Entrepôts royaux"
     ARTISANTS = "Quartier des artisants"
@@ -30,7 +32,7 @@ class GameStatus(enum.StrEnum):
     COMPLETED = "completed"    
 
 def get_random_color() -> str:
-    return f"#{random.randint(0, 0xFFFFFF).to_bytes(3).hex()}".upper()
+    return f"#{random.randint(0, 0xFFFFFF).to_bytes(3).hex().upper()}"
 
 class Route(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(frozen=True)

@@ -1,8 +1,8 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from typing import List
-from src.controller import ControllerDep
-from src.datatypes import Player, Square
+from controller import ControllerDep
+from util import Player, Square
 
 
 router = APIRouter(prefix="/players", tags=["players"])

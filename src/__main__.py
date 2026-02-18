@@ -1,17 +1,14 @@
 import fastapi
 import uvicorn
-import sys
-from os.path import dirname, abspath
-sys.path.append(dirname(dirname(abspath(__file__))))
-from src.routes import calendar, players, routes, squares, game
+import game_calendar, game, map_routes, players, squares
 from fastapi.middleware.cors import CORSMiddleware
 
 
 app = fastapi.FastAPI()
 app.include_router(players.router)
-app.include_router(routes.router)
+app.include_router(map_routes.router)
 app.include_router(squares.router)  
-app.include_router(calendar.router)
+app.include_router(game_calendar.router)
 app.include_router(game.router)
 
 origins = [

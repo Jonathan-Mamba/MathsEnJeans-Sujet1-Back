@@ -1,7 +1,7 @@
 import threading
 from uuid import UUID
-from src.datatypes import Player, Square, Route, Day, StatusDict, RouteType
-from src.model import GameModel
+from util import Player, Square, Route, Day, StatusDict, RouteType
+from model import GameModel
 from fastapi import Depends
 from typing import Annotated
 
@@ -60,6 +60,9 @@ class Controller:
 
     def get_route_types(self) -> dict[RouteType, str]:
         return self._game_model.get_route_types()
+    
+    def get_route_type_all(self) -> str:
+        return self._game_model.get_route_type_all()
 
     # Calendar methods
     def get_calendar(self) -> list[Day]:
