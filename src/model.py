@@ -1,10 +1,11 @@
 import fastapi
 import asyncio
 import itertools
-import uuid
-from typing import Iterator
+import random
+from typing import Optional
+from pydantic import ValidationError
 from functools import wraps
-from util import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color, ROUTE_ALL
+from util import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color, ROUTE_ALL, ExportDict
 
 
 def in_progress(error_message: str):
@@ -18,17 +19,33 @@ def in_progress(error_message: str):
     return decorator
 
 
+def validate_data(data: dict) -> dict:
+    final_dict = {}
+    players = data.get("players", [])
+    routes = data.get("routes", [])
+    route_types = data.get("route_types", [])
+    route_type_all = data.get("route_type_all", "")
+    route_colors = data.get("route_colors", {})
+    game_state = data.get("game_state", {})
+    calendar = data.get("calendar", [])
+    
+    return final_dict
+
 class GameModel:
     def __init__(self):
         self.day_count = 1
         self.current_player = void_player
         self.status = GameStatus.NOT_STARTED
         self.player_iterator = itertools.cycle(enumerate([void_player]))
-        self.players_dict: dict[uuid.UUID, Player] = {}
+        self.players_dict: dict[str, Player] = {}
         self.calendar: list[Day] = []
         self.routes: set[Route] = set()
         self.route_types = {i: get_random_color() for i in RouteType}
         self.route_type_all = ROUTE_ALL
+        self.castle_square = Square.PALAIS
+        self.game_history: list[dict] = []
+        self.simulated = False
+        self.player_moved = False
 
    # Player methods    
     @in_progress("Cannot add players after the game has started.")
@@ -43,14 +60,14 @@ class GameModel:
             raise RuntimeError("Player with this ID already exists.")
 
     @in_progress("Cannot remove players after the game has started.")
-    def remove_player(self, player_id: uuid.UUID):
+    def remove_player(self, player_id: str):
         try:
             self.players_dict.pop(player_id)
         except KeyError:
             raise RuntimeError("Player not found.")
 
     @in_progress("Cannot modify players after the game has started.")
-    def modify_player(self, player_id: uuid.UUID, new_name: str, new_position: Square):
+    def modify_player(self, player_id: str, new_name: str, new_position: Square):
         if new_position is None:
             raise RuntimeError("Player must have a valid starting position.")   
          
@@ -61,7 +78,7 @@ class GameModel:
     def get_players(self) -> list[Player]:
         return list(self.players_dict.values())
     
-    def get_player(self, player_id: uuid.UUID) -> Player:
+    def get_player(self, player_id: str) -> Player:
         try:
             return self.players_dict[player_id]
         except KeyError:
@@ -76,18 +93,28 @@ class GameModel:
     
     @in_progress("Cannot modify routes after the game has started.")
     def add_route(self, route: Route):
-        route_type_all = {
-            r for r in (self.get_bound_routes(route.first_end) & self.get_bound_routes(route.second_end))
-            if r.type == self.route_type_all 
-        }
-        if not route_type_all:
-            self.routes.add(route)
+        bound_routes = self.get_connected_routes(route.first_end, route.second_end)
+        
+        if any(r.type == self.route_type_all for r in bound_routes):
+            return
+        self.routes.add(route)
 
-    def get_bound_routes(self, square: Square | None) -> set[Route]:
-        return {
-            route for route in self.routes 
-            if (route.first_end == square or route.second_end == square)
-            }
+        bound_routes = self.get_connected_routes(route.first_end, route.second_end)
+        route_types = {r.type for r in bound_routes}
+        
+        if route_types == set(self.get_day_types()):
+            for route_type in route_types:
+                self.routes.remove(Route(first_end=route.first_end, second_end=route.second_end, type=route_type))
+            self.routes.add(Route(first_end=route.first_end, second_end=route.second_end, type=self.route_type_all))
+
+
+    def get_connected_routes(self, first_square: Square | None, second_square: Square | None = None) -> set[Route]:
+        if first_square is None:
+            return set()
+        if second_square is None:
+            return {route for route in self.routes if first_square in (route.first_end, route.second_end)}
+        return {route for route in self.routes if {route.first_end, route.second_end} == {first_square, second_square}}
+
 
     def remove_route(self, route: Route):
         self.routes.remove(route)
@@ -129,7 +156,25 @@ class GameModel:
             "current_day_type": self.calendar[self.day_count - 1] if self.status == GameStatus.IN_PROGRESS else None
         }
     
-    def move_player(self, player_id: uuid.UUID, new_position: Square):
+    def add_to_history(self, player_id: str, old_position: str, new_position: str):
+        if len(self.game_history) < self.day_count:
+            self.game_history.append({"day_type": self.calendar[self.day_count - 1], "moves": []})
+       
+        day_moves = self.game_history[self.day_count - 1]["moves"]
+        day_moves.append((player_id, old_position, new_position))
+
+    def simulate_game(self):
+        if self.status == GameStatus.NOT_STARTED:
+            raise RuntimeError("Connot simulate game if game is not started.")
+        
+        while self.status == GameStatus.IN_PROGRESS:
+            avaialable_squares = [
+                (route.first_end if route.second_end == self.current_player.position else route.second_end)
+                for route in self.get_connected_routes(self.current_player.position)
+            ]
+            self.move_player(self.current_player.id, random.choice(avaialable_squares))
+    
+    def move_player(self, player_id: str, new_position: Square):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Cannot move players when the game is not in progress.")
         
@@ -138,17 +183,24 @@ class GameModel:
             raise RuntimeError("It's not this player's turn.")
         
         route_type = self.calendar[self.day_count - 1]
-        routes = self.get_bound_routes(player.position) & self.get_bound_routes(new_position)
+        routes = self.get_connected_routes(player.position, new_position)
         routes = {route for route in routes if (route.type == self.route_type_all or route.type == route_type)}
         if not routes:
             raise RuntimeError("No valid route between the two squares.")
 
         player.position = new_position
+        self.player_moved = True
+        self.add_to_history(player_id=player.id, old_position=player.position, new_position=new_position)
         index, self.current_player = next(self.player_iterator)
         if index == 0:
-            self.day_count += 1
-            if self.day_count > len(self.calendar):
-                self.status = GameStatus.COMPLETED
+            self.at_new_turn()
+
+    def at_new_turn(self):
+        self.day_count += 1
+        if self.day_count > len(self.calendar) or all(player.position == self.castle_square for player in self.players_dict.values()) or not self.player_moved:
+            self.status = GameStatus.COMPLETED
+        else:
+            self.player_moved = False
 
     def get_event(self, request: fastapi.Request):
         async def event_generator():
@@ -185,4 +237,26 @@ class GameModel:
         self.status = GameStatus.IN_PROGRESS
         self.player_iterator = itertools.cycle(enumerate(self.players_dict.values()))
         index, self.current_player = next(self.player_iterator)
-            
+
+    def export(self) -> dict:
+        return {
+            "version": "1.0",
+            "data": {
+                "players": [i.model_dump() for i in self.players_dict.values()],
+                "routes": [i.model_dump() for i in self.routes],
+                "route_types": list(self.route_types.keys()),
+                "route_type_all": self.route_type_all,
+                "castle_square": self.castle_square,
+                "route_colors": self.route_types,
+                "game_state": self.game_status(),
+                "calendar": self.calendar,
+            }
+        }
+    
+    def import_data(self, imported_dict: ExportDict) -> None:
+        version = imported_dict['version']
+        if version != "1.0":
+            raise RuntimeError(f"Version '{version}' is not supported.")
+        
+
+        

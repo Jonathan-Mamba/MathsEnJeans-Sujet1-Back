@@ -1,5 +1,4 @@
 import fastapi
-import uuid
 from util import Square, StatusDict
 from controller import ControllerDep
 from sse_starlette.sse import EventSourceResponse
@@ -11,7 +10,7 @@ def get_game_status(controller: ControllerDep):
     return controller.game_status()
 
 @router.post("/move_player")
-def move_player(player_id: uuid.UUID, new_position: Square, controller: ControllerDep):
+def move_player(player_id: str, new_position: Square, controller: ControllerDep):
     try:
         controller.move_player(player_id, new_position)
     except RuntimeError as e:
@@ -20,6 +19,14 @@ def move_player(player_id: uuid.UUID, new_position: Square, controller: Controll
 
 @router.post("/start")
 def start_game(controller: ControllerDep):
+    try:
+        controller.start_game()
+    except RuntimeError as e:
+        raise fastapi.HTTPException(400, str(e))
+    return "Game started successfully."
+
+@router.post("/simulate")
+def simulate_game(controller: ControllerDep):
     try:
         controller.start_game()
     except RuntimeError as e:

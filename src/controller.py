@@ -1,5 +1,4 @@
 import threading
-from uuid import UUID
 from util import Player, Square, Route, Day, StatusDict, RouteType
 from model import GameModel
 from fastapi import Depends
@@ -13,6 +12,9 @@ class Controller:
         self._players_lock = threading.Lock()
         self._routes_lock = threading.Lock()
 
+    def export_model(self) -> dict:
+        return self._game_model.export()
+
     # Game methods
     def game_status(self) -> StatusDict:
         return self._game_model.game_status()
@@ -23,8 +25,14 @@ class Controller:
     def start_game(self):
         self._game_model.start_game()
 
-    def move_player(self, player_id: UUID, new_position: Square):
+    def move_player(self, player_id: str, new_position: Square):
         self._game_model.move_player(player_id, new_position)
+
+    def simulate_game(self):
+        self._game_model.simulate_game()
+
+    def get_castle_square(self) -> str:
+        return self._game_model.castle_square
 
     # Player methods
     def get_players(self) -> list[Player]:
@@ -34,11 +42,11 @@ class Controller:
         with self._players_lock:
             self._game_model.add_player(player)
 
-    def modify_player(self, player_id: UUID, new_name: str, new_position: Square):
+    def modify_player(self, player_id: str, new_name: str, new_position: Square):
         with self._players_lock:
             self._game_model.modify_player(player_id, new_name, new_position)
     
-    def remove_player(self, player_id: UUID):
+    def remove_player(self, player_id: str):
         with self._players_lock:
             self._game_model.remove_player(player_id)
 

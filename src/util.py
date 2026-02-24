@@ -17,7 +17,7 @@ class RouteType(enum.StrEnum):
     LABEUR = "Labeur"
     TOUT = "Tout"
 
-ROUTE_ALL: str = RouteType.TOUT
+ROUTE_ALL: RouteType = RouteType.TOUT
 
 class Square(enum.StrEnum):
     ENTREPOTS = "Entrepôts royaux"
@@ -45,12 +45,13 @@ class Route(pydantic.BaseModel):
     
 class Player(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(frozen=True)
-    id: uuid.UUID = pydantic.Field(default_factory=lambda: uuid.uuid4())
+    id: str = pydantic.Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     position: Square | None = None
     color: str = pydantic.Field(default_factory=get_random_color)
 
 void_player = Player(name="Void Player")
+
 
 class StatusDict(typing.TypedDict):
     status: GameStatus
@@ -58,4 +59,28 @@ class StatusDict(typing.TypedDict):
     current_player: Player
     current_day_type: Day | None
 
+class PlayerDict(typing.TypedDict):
+    id: str
+    name: str
+    color: str
+    position: Square
+
+class RouteDict(typing.TypedDict):
+    first_end: Square
+    second_end: Square
+    type: RouteType
+
+class ExportData(typing.TypedDict):
+    players: list[PlayerDict]
+    calendar: list[Day]
+    routes: list[RouteDict]
+    route_types: list[RouteType]
+    route_type_all: RouteType
+    route_colors: dict[RouteType, str]
+    game_state: StatusDict
+
+class ExportDict(typing.TypedDict):
+    version: str
+    data: ExportData
+    
 
