@@ -44,9 +44,9 @@ class Route(pydantic.BaseModel):
         return hash((self.first_end, self.second_end, self.type))
     
 class Player(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(frozen=True)
+    #model_config = pydantic.ConfigDict(frozen=True)
     id: str = pydantic.Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str = ""
+    name: str
     position: Square | None = None
     color: str = pydantic.Field(default_factory=get_random_color)
 

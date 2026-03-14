@@ -27,10 +27,7 @@ def start_game(controller: ControllerDep):
 
 @router.post("/simulate")
 def simulate_game(controller: ControllerDep):
-    try:
-        controller.start_game()
-    except RuntimeError as e:
-        raise fastapi.HTTPException(400, str(e))
+    controller.simulate_game()
     return "Game started successfully."
 
 @router.get("/events")

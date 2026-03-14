@@ -2,11 +2,11 @@ import fastapi
 import asyncio
 import itertools
 import random
-from typing import Optional
-from pydantic import ValidationError
 from functools import wraps
 from util import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color, ROUTE_ALL, ExportDict
 
+
+TEST_MODE = True
 
 def in_progress(error_message: str):
     def decorator(func):
@@ -47,6 +47,28 @@ class GameModel:
         self.simulated = False
         self.player_moved = False
 
+    def import_preset(self):
+        new_model = GameModel()
+        player1 = Player(position=Square.ARTISANTS, name="j1")
+        player2 = Player(position=Square.ENTREPOTS, name="j2")
+
+        self.day_count = new_model.day_count
+        self.current_player = void_player
+        self.status = new_model.status
+        self.player_iterator = new_model.player_iterator
+        self.players_dict = {
+            player1.id: player1,
+            player2.id: player2
+        }
+        self.calendar = [Day.DOLEANCES, Day.LABEUR, Day.LIVRAISON, Day.MARCHANDS, Day.DOLEANCES]
+        t = RouteType.TOUT
+        self.routes = {
+            Route(first_end=Square.ARTISANTS, second_end=Square.ENTREPOTS, type=t),
+            Route(first_end=Square.ENTREPOTS, second_end=Square.GARDES, type=t),
+            Route(first_end=Square.GARDES, second_end=Square.MARCHANDS, type=t),
+            Route(first_end=Square.MARCHANDS, second_end=Square.PALAIS, type=t)
+        }
+
    # Player methods    
     @in_progress("Cannot add players after the game has started.")
     def add_player(self, player: Player):
@@ -72,8 +94,8 @@ class GameModel:
             raise RuntimeError("Player must have a valid starting position.")   
          
         player = self.get_player(player_id)  
-        new_player = Player(name=new_name, position=new_position, id=player_id)
-        self.players_dict[player_id] = new_player
+        player.name = new_name
+        player.position = new_position
 
     def get_players(self) -> list[Player]:
         return list(self.players_dict.values())
@@ -107,14 +129,12 @@ class GameModel:
                 self.routes.remove(Route(first_end=route.first_end, second_end=route.second_end, type=route_type))
             self.routes.add(Route(first_end=route.first_end, second_end=route.second_end, type=self.route_type_all))
 
-
     def get_connected_routes(self, first_square: Square | None, second_square: Square | None = None) -> set[Route]:
         if first_square is None:
             return set()
         if second_square is None:
             return {route for route in self.routes if first_square in (route.first_end, route.second_end)}
         return {route for route in self.routes if {route.first_end, route.second_end} == {first_square, second_square}}
-
 
     def remove_route(self, route: Route):
         self.routes.remove(route)
@@ -165,13 +185,14 @@ class GameModel:
 
     def simulate_game(self):
         if self.status == GameStatus.NOT_STARTED:
-            raise RuntimeError("Connot simulate game if game is not started.")
+            raise RuntimeError("Cannot simulate game if game is not started.")
         
         while self.status == GameStatus.IN_PROGRESS:
             avaialable_squares = [
                 (route.first_end if route.second_end == self.current_player.position else route.second_end)
                 for route in self.get_connected_routes(self.current_player.position)
             ]
+            
             self.move_player(self.current_player.id, random.choice(avaialable_squares))
     
     def move_player(self, player_id: str, new_position: Square):
@@ -188,9 +209,9 @@ class GameModel:
         if not routes:
             raise RuntimeError("No valid route between the two squares.")
 
+        self.add_to_history(player_id=player.id, old_position=player.position, new_position=new_position)
         player.position = new_position
         self.player_moved = True
-        self.add_to_history(player_id=player.id, old_position=player.position, new_position=new_position)
         index, self.current_player = next(self.player_iterator)
         if index == 0:
             self.at_new_turn()
@@ -250,6 +271,7 @@ class GameModel:
                 "route_colors": self.route_types,
                 "game_state": self.game_status(),
                 "calendar": self.calendar,
+                "game_history": self.game_history
             }
         }
     

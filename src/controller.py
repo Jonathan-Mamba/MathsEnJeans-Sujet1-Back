@@ -14,6 +14,9 @@ class Controller:
 
     def export_model(self) -> dict:
         return self._game_model.export()
+    
+    def import_preset(self):
+        self._game_model.import_preset()
 
     # Game methods
     def game_status(self) -> StatusDict:
