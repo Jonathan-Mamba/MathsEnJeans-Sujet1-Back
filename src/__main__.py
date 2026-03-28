@@ -7,14 +7,13 @@ import map_routes
 import square_routes
 from fastapi.middleware.cors import CORSMiddleware
 from controller import ControllerDep
-import pprint
 
 app = fastapi.FastAPI()
 
 # Add CORS middleware FIRST before routers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:*"],  # Allow all origins for development
+    allow_origins=["http://localhost:*", "https://*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
