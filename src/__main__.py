@@ -7,12 +7,23 @@ import map_routes
 import square_routes
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from controller import ControllerDep
+
+
+class StrippedTrailingSlashMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path != "/" and request.url.path.endswith("/"):
+            request.scope["path"] = request.url.path.rstrip("/")
+        return await call_next(request)
+
 
 app = fastapi.FastAPI()
 
 # Middleware order matters - add trusted hosts first
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(StrippedTrailingSlashMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
@@ -36,12 +47,10 @@ async def root():
     return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.0"}
 
 @app.get("/export", summary="Get the data of the model")
-@app.get("/export/", summary="Get the data of the model")
 def export_data(controller: ControllerDep):
     return controller.export_model()
 
 @app.post("/preset")
-@app.post("/preset/")
 def import_(controller: ControllerDep):
     controller.import_preset()
 

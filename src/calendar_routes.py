@@ -7,17 +7,14 @@ from typing import List
 router = fastapi.APIRouter(prefix="/calendar", tags=["calendar"])
 
 @router.get("", response_model=List[Day])
-@router.get("/", response_model=List[Day])
 def get_calendar(controller: ControllerDep):
     return controller.get_calendar()
 
 @router.get("/day_types", response_model=List[Day])
-@router.get("/day_types/", response_model=List[Day])
 def get_day_types(controller: ControllerDep):
     return controller.get_day_types()
 
 @router.post("")
-@router.post("/")
 def add_day(day_type: Day, controller: ControllerDep):
     try:
         controller.add_day(day_type)
@@ -26,7 +23,6 @@ def add_day(day_type: Day, controller: ControllerDep):
     return "Day added successfully."
 
 @router.put("")
-@router.put("/")
 def modify_day(day_number: int, new_day: Day, controller: ControllerDep):
     try:    
         controller.modify_day(day_number, new_day)
@@ -37,5 +33,4 @@ def modify_day(day_number: int, new_day: Day, controller: ControllerDep):
 @router.delete("")
 @router.delete("/")
 def delete_day(day_number: int, controller: ControllerDep):
-    controller.remove_day(day_number)
     return "Day removed successfully."
