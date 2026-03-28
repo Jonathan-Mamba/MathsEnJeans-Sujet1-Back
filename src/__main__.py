@@ -14,9 +14,7 @@ app = fastapi.FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:*",  # or whatever your dev port is
-        "https://kastler-math-en-jeans.pages.dev",  # Your Cloudflare Pages domain
-        "http://kastler-math-en-jeans.pages.dev",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
