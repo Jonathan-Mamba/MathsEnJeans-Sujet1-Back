@@ -19,7 +19,7 @@ class StrippedTrailingSlashMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(redirect_slashes=False)
 
 # Middleware order matters - add trusted hosts first
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
