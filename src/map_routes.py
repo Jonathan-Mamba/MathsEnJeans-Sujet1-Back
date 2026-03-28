@@ -9,10 +9,12 @@ def get_all_routes(controller: ControllerDep):
     return controller.get_all_routes()
 
 @router.get("/types", summary="Get all route types, and their colors", response_model=dict[RouteType, str])
+@router.get("/types/", summary="Get all route types, and their colors", response_model=dict[RouteType, str])
 def get_route_types(controller: ControllerDep):
     return controller.get_route_types()
 
 @router.get("/types/all", summary="Get the name of route type that contains all of the routes.", response_model=str)
+@router.get("/types/all/", summary="Get the name of route type that contains all of the routes.", response_model=str)
 def get_route_type_all(controller: ControllerDep):
     return controller.get_route_type_all()
 

@@ -11,6 +11,7 @@ def get_calendar(controller: ControllerDep):
     return controller.get_calendar()
 
 @router.get("/day_types", response_model=List[Day])
+@router.get("/day_types/", response_model=List[Day])
 def get_day_types(controller: ControllerDep):
     return controller.get_day_types()
 

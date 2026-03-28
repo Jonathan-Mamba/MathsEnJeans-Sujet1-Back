@@ -36,10 +36,12 @@ async def root():
     return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.0"}
 
 @app.get("/export", summary="Get the data of the model")
+@app.get("/export/", summary="Get the data of the model")
 def export_data(controller: ControllerDep):
     return controller.export_model()
 
 @app.post("/preset")
+@app.post("/preset/")
 def import_(controller: ControllerDep):
     controller.import_preset()
 
