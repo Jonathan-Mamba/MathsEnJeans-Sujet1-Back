@@ -1,7 +1,6 @@
 import fastapi
 from util import Square, StatusDict, GameHistoryEntry
 from controller import ControllerDep
-from sse_starlette.sse import EventSourceResponse
 
 router = fastapi.APIRouter(prefix="/game", tags=["game"])
 
@@ -45,7 +44,3 @@ def simulate_game(controller: ControllerDep):
 @router.get("/history", response_model=list[GameHistoryEntry])
 def game_history(controller: ControllerDep):
     return controller.get_game_history()
-
-@router.get("/events")
-def game_events(request: fastapi.Request, controller: ControllerDep):
-    return EventSourceResponse(controller.get_event(request))
