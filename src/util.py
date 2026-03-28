@@ -47,16 +47,14 @@ class Player(pydantic.BaseModel):
     #model_config = pydantic.ConfigDict(frozen=True)
     id: str = pydantic.Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    position: Square | None = None
+    position: Square
     color: str = pydantic.Field(default_factory=get_random_color)
-
-void_player = Player(name="Void Player")
 
 
 class StatusDict(typing.TypedDict):
     status: GameStatus
     day_count: int
-    current_player: Player
+    current_player: Player | None
     current_day_type: Day | None
 
 class PlayerDict(typing.TypedDict):
@@ -82,5 +80,9 @@ class ExportData(typing.TypedDict):
 class ExportDict(typing.TypedDict):
     version: str
     data: ExportData
+
+class GameHistoryEntry(typing.TypedDict):
+    day_type: Day
+    moves: list[tuple[str, str, str]]  # List of (player_id, from_square, to_square)
     
 

@@ -10,24 +10,21 @@ from controller import ControllerDep
 import pprint
 
 app = fastapi.FastAPI()
+
+# Add CORS middleware FIRST before routers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(player_routes.router)
 app.include_router(map_routes.router)
 app.include_router(square_routes.router)  
 app.include_router(calendar_routes.router)
 app.include_router(game_routes.router)
-
-origins = [
-    "http://localhost:5173",
-    "http://localhost:*",
-    "https://localhost:*"
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.get("/", summary="Root Endpoint", response_model=dict)
 async def root():
@@ -35,7 +32,6 @@ async def root():
 
 @app.get("/export", summary="Get the data of the model")
 def export_data(controller: ControllerDep):
-    pprint.pprint(controller.export_model())
     return controller.export_model()
 
 @app.post("/preset")

@@ -3,7 +3,8 @@ import asyncio
 import itertools
 import random
 from functools import wraps
-from util import Player, Day, Route, GameStatus, Square, void_player, StatusDict, RouteType, get_random_color, ROUTE_ALL, ExportDict
+import util
+from util import Player, Day, Route, GameStatus, Square, StatusDict, RouteType, get_random_color, ROUTE_ALL, ExportDict
 
 
 TEST_MODE = True
@@ -33,17 +34,17 @@ def validate_data(data: dict) -> dict:
 
 class GameModel:
     def __init__(self):
-        self.day_count = 1
-        self.current_player = void_player
+        self.day_count = 0
+        self.current_player: Player | None = None
         self.status = GameStatus.NOT_STARTED
-        self.player_iterator = itertools.cycle(enumerate([void_player]))
+        self.player_iterator = itertools.cycle(enumerate([]))
         self.players_dict: dict[str, Player] = {}
         self.calendar: list[Day] = []
         self.routes: set[Route] = set()
         self.route_types = {i: get_random_color() for i in RouteType}
         self.route_type_all = ROUTE_ALL
         self.castle_square = Square.PALAIS
-        self.game_history: list[dict] = []
+        self.game_history: list[util.GameHistoryEntry] = []
         self.simulated = False
         self.player_moved = False
 
@@ -53,7 +54,7 @@ class GameModel:
         player2 = Player(position=Square.ENTREPOTS, name="j2")
 
         self.day_count = new_model.day_count
-        self.current_player = void_player
+        self.current_player = None
         self.status = new_model.status
         self.player_iterator = new_model.player_iterator
         self.players_dict = {
@@ -69,11 +70,16 @@ class GameModel:
             Route(first_end=Square.MARCHANDS, second_end=Square.PALAIS, type=t)
         }
 
-   # Player methods    
+   # Player methods ----------------------------------------------------------------------    
     @in_progress("Cannot add players after the game has started.")
     def add_player(self, player: Player):
+        if player.name.strip() == "":
+            raise RuntimeError("Player name cannot be empty.")
         if player.position is None:
-            raise RuntimeError("Player must have a valid starting position.")    
+            raise RuntimeError("Player must have a valid starting position.")
+        player_names = {p.name for p in self.players_dict.values()}
+        if player.name in player_names:
+            raise RuntimeError("Player with this name already exists.")    
         try:
             self.get_player(player.id)
         except RuntimeError:
@@ -92,7 +98,10 @@ class GameModel:
     def modify_player(self, player_id: str, new_name: str, new_position: Square):
         if new_position is None:
             raise RuntimeError("Player must have a valid starting position.")   
-         
+        player_names = {p.name for p in self.players_dict.values() if p.id != player_id}
+        if new_name in player_names:
+            raise RuntimeError("Player with this name already exists.") 
+
         player = self.get_player(player_id)  
         player.name = new_name
         player.position = new_position
@@ -109,35 +118,36 @@ class GameModel:
     def get_squares(self) -> list[Square]:
         return [square for square in Square]
     
-    # Route methods
+    # Route methods ----------------------------------------------------------------------
     def get_all_routes(self) -> list[Route]:
         return list(self.routes)
     
     @in_progress("Cannot modify routes after the game has started.")
-    def add_route(self, route: Route):
-        bound_routes = self.get_connected_routes(route.first_end, route.second_end)
+    def add_route(self, added_route: Route):
+        bound_routes = self.get_connected_routes(added_route.first_end, added_route.second_end)
         
         if any(r.type == self.route_type_all for r in bound_routes):
             return
-        self.routes.add(route)
+        self.routes.add(added_route)
 
-        bound_routes = self.get_connected_routes(route.first_end, route.second_end)
+        bound_routes = self.get_connected_routes(added_route.first_end, added_route.second_end)
         route_types = {r.type for r in bound_routes}
-        
-        if route_types == set(self.get_day_types()):
-            for route_type in route_types:
-                self.routes.remove(Route(first_end=route.first_end, second_end=route.second_end, type=route_type))
-            self.routes.add(Route(first_end=route.first_end, second_end=route.second_end, type=self.route_type_all))
 
-    def get_connected_routes(self, first_square: Square | None, second_square: Square | None = None) -> set[Route]:
-        if first_square is None:
-            return set()
+        if route_types == set(self.get_day_types()) or added_route.type == self.route_type_all:
+            for route_type in route_types:
+                self.routes.remove(Route(first_end=added_route.first_end, second_end=added_route.second_end, type=route_type))
+            self.routes.add(Route(first_end=added_route.first_end, second_end=added_route.second_end, type=self.route_type_all))
+
+    def get_connected_routes(self, first_square: Square, second_square: Square | None = None) -> set[Route]:
         if second_square is None:
             return {route for route in self.routes if first_square in (route.first_end, route.second_end)}
         return {route for route in self.routes if {route.first_end, route.second_end} == {first_square, second_square}}
 
     def remove_route(self, route: Route):
-        self.routes.remove(route)
+        try:
+            self.routes.remove(route)
+        except KeyError:
+            raise RuntimeError("Route not found.")
 
     def get_route_types(self) -> dict[RouteType, str]:
         return self.route_types
@@ -145,7 +155,7 @@ class GameModel:
     def get_route_type_all(self) -> str:
         return self.route_type_all
 
-    # Calendar methods
+    # Calendar methods ----------------------------------------------------------------------
     def get_calendar(self) -> list[Day]:
         return self.calendar.copy()
     
@@ -155,7 +165,7 @@ class GameModel:
     
     @in_progress("Cannot modify calendar after the game has started.")
     def remove_day(self, day_number: int):
-        self.calendar = [day for index, day in enumerate(self.calendar) if index+1 != day_number]
+        self.calendar = [day for index, day in enumerate(self.calendar) if index + 1 != day_number]
 
     @in_progress("Cannot modify calendar after the game has started.")
     def modify_day(self, day_number: int, new_day_type: Day):
@@ -167,7 +177,7 @@ class GameModel:
     def get_day_types(self) -> list[Day]:
         return [day for day in Day]
 
-    # Game methods
+    # Game methods ----------------------------------------------------------------------
     def game_status(self) -> StatusDict:
         return {
             "status": self.status,
@@ -188,13 +198,24 @@ class GameModel:
             raise RuntimeError("Cannot simulate game if game is not started.")
         
         while self.status == GameStatus.IN_PROGRESS:
-            avaialable_squares = [
+            if self.current_player is None:
+                break
+            routes = self.get_connected_routes(self.current_player.position)
+            available_squares = [
                 (route.first_end if route.second_end == self.current_player.position else route.second_end)
-                for route in self.get_connected_routes(self.current_player.position)
+                for route in routes
+                if route.type == self.route_type_all or route.type == self.calendar[self.day_count - 1]
             ]
-            
-            self.move_player(self.current_player.id, random.choice(avaialable_squares))
-    
+            self.move_player(self.current_player.id, random.choice(available_squares))
+
+    def can_move(self, player: Player) -> bool:
+        day_type = self.calendar[self.day_count - 1]
+        routes = self.get_connected_routes(player.position)
+        
+        if player.position == self.castle_square:
+            return False
+        return any(route.type == self.route_type_all or route.type == day_type for route in routes)
+
     def move_player(self, player_id: str, new_position: Square):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Cannot move players when the game is not in progress.")
@@ -208,25 +229,67 @@ class GameModel:
         routes = {route for route in routes if (route.type == self.route_type_all or route.type == route_type)}
         if not routes:
             raise RuntimeError("No valid route between the two squares.")
+        
+        if player.position == self.castle_square:
+            raise RuntimeError("Le joueur est coincé au palais.")
 
-        self.add_to_history(player_id=player.id, old_position=player.position, new_position=new_position)
+        self.add_to_history(player.id, player.position, new_position)
         player.position = new_position
         self.player_moved = True
-        index, self.current_player = next(self.player_iterator)
-        if index == 0:
-            self.at_new_turn()
+        self.set_next_current_player()
 
     def at_new_turn(self):
         self.day_count += 1
-        if self.day_count > len(self.calendar) or all(player.position == self.castle_square for player in self.players_dict.values()) or not self.player_moved:
+        if (
+            self.day_count > len(self.calendar) 
+            or all(player.position == self.castle_square for player in self.players_dict.values()) 
+            or (self.player_moved is False and self.day_count > 1)
+        ):
             self.status = GameStatus.COMPLETED
+            self.day_count = 0
+            self.current_player = None
+            self.player_iterator = itertools.cycle(enumerate([]))
         else:
             self.player_moved = False
 
+    @in_progress("Game has already started.")
+    def start_game(self):        
+        if not self.players_dict:
+            raise RuntimeError("Cannot start game without players.")
+        if not self.calendar:
+            raise RuntimeError("Cannot start game without a calendar.") 
+        if not self.routes:
+            raise RuntimeError("Cannot start game without routes.")
+        
+        self.status = GameStatus.IN_PROGRESS
+        self.game_history = []
+        self.player_iterator = itertools.cycle(enumerate(self.players_dict.values()))
+        self.set_next_current_player()
+
+    def stop_game(self):
+        if self.status != GameStatus.IN_PROGRESS:
+            raise RuntimeError("Game is not in progress.")
+        self.status = GameStatus.NOT_STARTED
+        self.day_count = 0
+        self.current_player = None
+        self.player_iterator = itertools.cycle(enumerate([]))
+        self.game_history = []
+
+    def set_next_current_player(self):
+        index, self.current_player = next(self.player_iterator)
+        if index == 0:
+            self.at_new_turn()
+        if (self.current_player is not None) and (not self.can_move(self.current_player)):
+            self.set_next_current_player()
+
+    # other methods ----------------------------------------------------------------------
     def get_event(self, request: fastapi.Request):
         async def event_generator():
             day = self.day_count
-            player = self.current_player.model_copy()
+            if self.current_player is not None:
+                player = self.current_player.model_copy()
+            else:
+                player = None
             while True:
                 if await request.is_disconnected():
                     break
@@ -241,23 +304,13 @@ class GameModel:
 
                 if player != self.current_player:
                     yield {"event": "player_moved", "data": self.current_player}
-                    player = self.current_player.model_copy()
+                    if self.current_player is not None:
+                        player = self.current_player.model_copy()
+                    else:
+                        player = None
 
                 await asyncio.sleep(0.1)
         return event_generator()
-    
-    @in_progress("Game has already started.")
-    def start_game(self):        
-        if not self.players_dict:
-            raise RuntimeError("Cannot start game without players.")
-        if not self.calendar:
-            raise RuntimeError("Cannot start game without a calendar.") 
-        if not self.routes:
-            raise RuntimeError("Cannot start game without routes.")
-        
-        self.status = GameStatus.IN_PROGRESS
-        self.player_iterator = itertools.cycle(enumerate(self.players_dict.values()))
-        index, self.current_player = next(self.player_iterator)
 
     def export(self) -> dict:
         return {

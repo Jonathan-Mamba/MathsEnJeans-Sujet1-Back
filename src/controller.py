@@ -1,5 +1,5 @@
 import threading
-from util import Player, Square, Route, Day, StatusDict, RouteType
+from util import Player, Square, Route, Day, StatusDict, RouteType, GameHistoryEntry
 from model import GameModel
 from fastapi import Depends
 from typing import Annotated
@@ -8,7 +8,7 @@ from typing import Annotated
 class Controller:
     def __init__(self):
         self._game_model = GameModel()
-        self._caldendar_lock = threading.Lock()
+        self._calendar_lock = threading.Lock()
         self._players_lock = threading.Lock()
         self._routes_lock = threading.Lock()
 
@@ -36,6 +36,12 @@ class Controller:
 
     def get_castle_square(self) -> str:
         return self._game_model.castle_square
+    
+    def stop_game(self):
+        self._game_model.stop_game()
+
+    def get_game_history(self) -> list[GameHistoryEntry]:
+        return self._game_model.game_history
 
     # Player methods
     def get_players(self) -> list[Player]:
@@ -48,7 +54,7 @@ class Controller:
     def modify_player(self, player_id: str, new_name: str, new_position: Square):
         with self._players_lock:
             self._game_model.modify_player(player_id, new_name, new_position)
-    
+
     def remove_player(self, player_id: str):
         with self._players_lock:
             self._game_model.remove_player(player_id)
@@ -77,19 +83,19 @@ class Controller:
 
     # Calendar methods
     def get_calendar(self) -> list[Day]:
-        with self._caldendar_lock:
+        with self._calendar_lock:
             return self._game_model.get_calendar()
         
     def add_day(self, day: Day):
-        with self._caldendar_lock:
+        with self._calendar_lock:
             self._game_model.add_day(day)
 
     def remove_day(self, day_number: int):
-        with self._caldendar_lock:
+        with self._calendar_lock:
             self._game_model.remove_day(day_number)
 
     def modify_day(self, day_number: int, new_day: Day):
-        with self._caldendar_lock:
+        with self._calendar_lock:
             self._game_model.modify_day(day_number, new_day)
 
     def get_day_types(self) -> list[Day]:
@@ -101,7 +107,3 @@ def get_controller() -> Controller:
     return _controller
 
 ControllerDep = Annotated[Controller, Depends(get_controller)]
-
-    
-
-    

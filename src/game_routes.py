@@ -1,5 +1,5 @@
 import fastapi
-from util import Square, StatusDict
+from util import Square, StatusDict, GameHistoryEntry
 from controller import ControllerDep
 from sse_starlette.sse import EventSourceResponse
 
@@ -25,10 +25,26 @@ def start_game(controller: ControllerDep):
         raise fastapi.HTTPException(400, str(e))
     return "Game started successfully."
 
+@router.post('/end')
+def stop_game(controller: ControllerDep):
+    try:
+        controller.stop_game()
+    except RuntimeError as e:
+        raise fastapi.HTTPException(400, str(e))
+    return "Game ended successfully."
+
 @router.post("/simulate")
 def simulate_game(controller: ControllerDep):
-    controller.simulate_game()
-    return "Game started successfully."
+    try:
+        controller.start_game()
+        controller.simulate_game()
+    except RuntimeError as e:
+        raise fastapi.HTTPException(400, str(e))
+    return "Game simulated successfully."
+
+@router.get("/history", response_model=list[GameHistoryEntry])
+def game_history(controller: ControllerDep):
+    return controller.get_game_history()
 
 @router.get("/events")
 def game_events(request: fastapi.Request, controller: ControllerDep):
