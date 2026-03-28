@@ -6,11 +6,15 @@ import player_routes
 import map_routes
 import square_routes
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from controller import ControllerDep
 
 app = fastapi.FastAPI()
 
-# Add CORS middleware FIRST before routers
+# Middleware order matters - add trusted hosts first
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
