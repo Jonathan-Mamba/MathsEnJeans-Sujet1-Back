@@ -13,7 +13,10 @@ app = fastapi.FastAPI()
 # Add CORS middleware FIRST before routers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:*", "https://*"],  # Allow all origins for development
+    allow_origins=[
+        "http://localhost:*",  # or whatever your dev port is
+        "https://kastler-math-en-jeans.pages.dev",  # Your Cloudflare Pages domain
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
