@@ -2,6 +2,7 @@ import fastapi
 import asyncio
 import itertools
 import random
+import logging
 from functools import wraps
 import util
 from util import Player, Day, Route, GameStatus, Square, StatusDict, RouteType, get_random_color, ROUTE_ALL, ExportDict
@@ -154,6 +155,11 @@ class GameModel:
     
     def get_route_type_all(self) -> str:
         return self.route_type_all
+    
+    def filter_routes_of_type(self, route_type: RouteType, routes: set[Route] | None = None) -> set[Route]:
+        if routes is None:
+            routes = self.routes
+        return {route for route in routes if route.type == route_type or route.type == self.route_type_all}
 
     # Calendar methods ----------------------------------------------------------------------
     def get_calendar(self) -> list[Day]:
@@ -200,11 +206,11 @@ class GameModel:
         while self.status == GameStatus.IN_PROGRESS:
             if self.current_player is None:
                 break
-            routes = self.get_connected_routes(self.current_player.position)
+            route_type = self.calendar[self.day_count - 1]
+            routes = self.filter_routes_of_type(route_type, routes=self.get_connected_routes(self.current_player.position))
             available_squares = [
                 (route.first_end if route.second_end == self.current_player.position else route.second_end)
                 for route in routes
-                if route.type == self.route_type_all or route.type == self.calendar[self.day_count - 1]
             ]
             self.move_player(self.current_player.id, random.choice(available_squares))
 
@@ -225,8 +231,7 @@ class GameModel:
             raise RuntimeError("It's not this player's turn.")
         
         route_type = self.calendar[self.day_count - 1]
-        routes = self.get_connected_routes(player.position, new_position)
-        routes = {route for route in routes if (route.type == self.route_type_all or route.type == route_type)}
+        routes = self.filter_routes_of_type(route_type, routes=self.get_connected_routes(player.position, new_position))
         if not routes:
             raise RuntimeError("No valid route between the two squares.")
         
@@ -245,12 +250,14 @@ class GameModel:
             or all(player.position == self.castle_square for player in self.players_dict.values()) 
             or (self.player_moved is False and self.day_count > 1)
         ):
-            self.status = GameStatus.COMPLETED
-            self.day_count = 0
-            self.current_player = None
-            self.player_iterator = itertools.cycle(enumerate([]))
-        else:
-            self.player_moved = False
+            self.at_game_end()
+        self.player_moved = False
+
+    def at_game_end(self):
+        self.status = GameStatus.COMPLETED
+        self.day_count = 0
+        self.current_player = None
+        self.player_iterator = itertools.cycle(enumerate([]))
 
     @in_progress("Game has already started.")
     def start_game(self):        
@@ -269,10 +276,8 @@ class GameModel:
     def stop_game(self):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Game is not in progress.")
+        self.at_game_end()
         self.status = GameStatus.NOT_STARTED
-        self.day_count = 0
-        self.current_player = None
-        self.player_iterator = itertools.cycle(enumerate([]))
         self.game_history = []
 
     def set_next_current_player(self):

@@ -31,6 +31,5 @@ def modify_day(day_number: int, new_day: Day, controller: ControllerDep):
     return "Day modified successfully."
     
 @router.delete("")
-@router.delete("/")
 def delete_day(day_number: int, controller: ControllerDep):
     return "Day removed successfully."

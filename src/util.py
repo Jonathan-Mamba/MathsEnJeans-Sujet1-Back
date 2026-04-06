@@ -26,6 +26,8 @@ class Square(enum.StrEnum):
     GARDES = "Salle des gardes"
     PALAIS = "Palais"
 
+CASTLE_SQUARE = Square.PALAIS
+
 class GameStatus(enum.StrEnum):
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
@@ -41,7 +43,12 @@ class Route(pydantic.BaseModel):
     type: RouteType
 
     def __hash__(self) -> int:
-        return hash((self.first_end, self.second_end, self.type))
+        return hash((tuple(sorted([self.first_end, self.second_end])), self.type))
+    
+    def __eq__(self, value: object) -> bool:
+        if type(value) == Route:
+            return hash(self) == hash(value)
+        raise NotImplemented
     
 class Player(pydantic.BaseModel):
     #model_config = pydantic.ConfigDict(frozen=True)
@@ -84,5 +91,3 @@ class ExportDict(typing.TypedDict):
 class GameHistoryEntry(typing.TypedDict):
     day_type: Day
     moves: list[tuple[str, str, str]]  # List of (player_id, from_square, to_square)
-    
-
