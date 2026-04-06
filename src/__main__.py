@@ -1,4 +1,5 @@
 import fastapi
+import logging
 import uvicorn
 import calendar_routes
 import game_routes
@@ -44,7 +45,7 @@ app.include_router(game_routes.router)
 
 @app.get("/", summary="Root Endpoint", response_model=dict)
 async def root():
-    return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.0"}
+    return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.0.0"}
 
 @app.get("/export", summary="Get the data of the model")
 def export_data(controller: ControllerDep):
@@ -54,5 +55,11 @@ def export_data(controller: ControllerDep):
 def import_(controller: ControllerDep):
     controller.import_preset()
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
