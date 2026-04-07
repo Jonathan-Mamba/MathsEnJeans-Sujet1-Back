@@ -54,7 +54,5 @@ if __name__ == "__main__":
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
-
-    port = int(os.getenv("PORT", 8000))
-    logging.info(f"Starting server on port {port}...")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    logging.info(f"Starting the Maths en Jeans Game API {()}")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
