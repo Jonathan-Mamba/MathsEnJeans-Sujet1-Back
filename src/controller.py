@@ -1,5 +1,5 @@
 import threading
-from util import Player, Route, StatusDict, GameHistoryEntry
+from util import Player, Route, StatusDict, GameHistoryEntry, ExportDict
 from model import GameModel
 from fastapi import Depends
 from typing import Annotated
@@ -12,7 +12,7 @@ class Controller:
         self._players_lock = threading.Lock()
         self._routes_lock = threading.Lock()
 
-    def export_model(self) -> dict:
+    def export_model(self) -> ExportDict:
         return self._game_model.export()
     
     def import_preset(self):
@@ -63,6 +63,12 @@ class Controller:
     def get_squares(self) -> list[str]:
         return self._game_model.get_squares()
     
+    def add_square(self, square: str):
+        self._game_model.add_square(square)
+
+    def remove_square(self, square: str):
+        self._game_model.remove_square(square)
+    
     # Route methods
     def get_all_routes(self) -> list[Route]:
         return self._game_model.get_all_routes()
@@ -75,9 +81,16 @@ class Controller:
         with self._routes_lock:
             self._game_model.remove_route(route)
 
+    # Route type methods
     def get_route_types(self) -> dict[str, str]:
         return self._game_model.get_route_types()
-    
+
+    def add_route_type(self, route_type: str, color: str):
+        self._game_model.add_route_type(route_type)
+
+    def remove_route_type(self, route_type: str):
+        self._game_model.remove_route_type(route_type)
+
     def get_route_type_all(self) -> str:
         return self._game_model.get_route_type_all()
 

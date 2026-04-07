@@ -31,4 +31,8 @@ def modify_day(day_number: int, new_day: str, controller: ControllerDep):
     
 @router.delete("")
 def delete_day(day_number: int, controller: ControllerDep):
+    try:
+        controller.remove_day(day_number)
+    except IndexError as e:
+        raise HTTPException(400, str(e))
     return "Day removed successfully."

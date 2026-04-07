@@ -1,11 +1,11 @@
 import fastapi
 import logging
 import uvicorn
-import calendar_routes
-import game_routes
-import player_routes
-import map_routes
-import square_routes
+import calendar_endpoints
+import game_endpoints
+import player_endpoints
+import map_endpoints
+import square_endpoints
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -37,11 +37,11 @@ app.add_middleware(
     allow_headers=["*"], 
 )
 
-app.include_router(player_routes.router)
-app.include_router(map_routes.router)
-app.include_router(square_routes.router)  
-app.include_router(calendar_routes.router)
-app.include_router(game_routes.router)
+app.include_router(player_endpoints.router)
+app.include_router(map_endpoints.router)
+app.include_router(square_endpoints.router)  
+app.include_router(calendar_endpoints.router)
+app.include_router(game_endpoints.router)
 
 @app.get("/", summary="Root Endpoint", response_model=dict)
 async def root():

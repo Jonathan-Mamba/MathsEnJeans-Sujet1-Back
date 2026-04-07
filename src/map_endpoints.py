@@ -12,6 +12,22 @@ def get_all_routes(controller: ControllerDep):
 def get_route_types(controller: ControllerDep):
     return controller.get_route_types()
 
+@router.post("/types", summary="Add a new route type")
+def add_route_type(route_type: str, controller: ControllerDep):
+    try:
+        controller.add_route_type(route_type, "")
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return "Route type added successfully."
+
+@router.delete("/types", summary="Remove a route type")
+def remove_route_type(route_type: str, controller: ControllerDep):
+    try:
+        controller.remove_route_type(route_type)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return "Route type removed successfully."
+
 @router.get("/types/all", summary="Get the name of route type that contains all of the routes.", response_model=str)
 def get_route_type_all(controller: ControllerDep):
     return controller.get_route_type_all()
