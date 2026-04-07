@@ -12,8 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 
 # Health check (optional but recommended for Railway)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:${PORT:-8000}/', timeout=5)"
+
 
 # Run the app
 CMD ["sh", "-c", "cd /app && python -m src"]
