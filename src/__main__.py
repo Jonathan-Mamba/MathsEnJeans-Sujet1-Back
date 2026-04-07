@@ -10,23 +10,13 @@ import route_endpoints
 import square_endpoints
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
 from controller import ControllerDep
-
-
-class StrippedTrailingSlashMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.url.path != "/" and request.url.path.endswith("/"):
-            request.scope["path"] = request.url.path.rstrip("/")
-        return await call_next(request)
 
 
 app = fastapi.FastAPI(redirect_slashes=False)
 
 # Middleware order matters - add trusted hosts first
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
-app.add_middleware(StrippedTrailingSlashMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
@@ -34,6 +24,7 @@ app.add_middleware(
     allow_origins=[
         "*"
     ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"], 
 )
@@ -63,4 +54,4 @@ if __name__ == "__main__":
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    uvicorn.run(app, host="0.0.0.0", port=8000)
