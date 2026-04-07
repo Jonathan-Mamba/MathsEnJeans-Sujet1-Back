@@ -1,5 +1,5 @@
 import threading
-from util import Player, Square, Route, Day, StatusDict, RouteType, GameHistoryEntry
+from util import Player, Route, StatusDict, GameHistoryEntry
 from model import GameModel
 from fastapi import Depends
 from typing import Annotated
@@ -28,7 +28,7 @@ class Controller:
     def start_game(self):
         self._game_model.start_game()
 
-    def move_player(self, player_id: str, new_position: Square):
+    def move_player(self, player_id: str, new_position: str):
         self._game_model.move_player(player_id, new_position)
 
     def simulate_game(self):
@@ -51,7 +51,7 @@ class Controller:
         with self._players_lock:
             self._game_model.add_player(player)
 
-    def modify_player(self, player_id: str, new_name: str, new_position: Square):
+    def modify_player(self, player_id: str, new_name: str, new_position: str):
         with self._players_lock:
             self._game_model.modify_player(player_id, new_name, new_position)
 
@@ -60,7 +60,7 @@ class Controller:
             self._game_model.remove_player(player_id)
 
     # Square methods
-    def get_squares(self) -> list[Square]:
+    def get_squares(self) -> list[str]:
         return self._game_model.get_squares()
     
     # Route methods
@@ -75,18 +75,18 @@ class Controller:
         with self._routes_lock:
             self._game_model.remove_route(route)
 
-    def get_route_types(self) -> dict[RouteType, str]:
+    def get_route_types(self) -> dict[str, str]:
         return self._game_model.get_route_types()
     
     def get_route_type_all(self) -> str:
         return self._game_model.get_route_type_all()
 
     # Calendar methods
-    def get_calendar(self) -> list[Day]:
+    def get_calendar(self) -> list[str]:
         with self._calendar_lock:
             return self._game_model.get_calendar()
         
-    def add_day(self, day: Day):
+    def add_day(self, day: str):
         with self._calendar_lock:
             self._game_model.add_day(day)
 
@@ -94,11 +94,11 @@ class Controller:
         with self._calendar_lock:
             self._game_model.remove_day(day_number)
 
-    def modify_day(self, day_number: int, new_day: Day):
+    def modify_day(self, day_number: int, new_day: str):
         with self._calendar_lock:
             self._game_model.modify_day(day_number, new_day)
 
-    def get_day_types(self) -> list[Day]:
+    def get_day_types(self) -> list[str]:
         return self._game_model.get_day_types()
 
 _controller = Controller()

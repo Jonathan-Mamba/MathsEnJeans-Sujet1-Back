@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from typing import List
 from controller import ControllerDep
-from util import Player, Square
+from util import Player
 
 
 router = APIRouter(prefix="/players", tags=["players"])
@@ -14,16 +14,16 @@ def get_all_players(controller: ControllerDep):
 
 
 @router.post("", summary="Add a new player")
-def add_player(name: str, controller: ControllerDep, position: Square):
+def add_player(name: str, controller: ControllerDep, position: str):
     try:
-        controller.add_player(Player(name=name, position=Square(position), id=str(uuid.uuid4())))
+        controller.add_player(Player(name=name, position=position, id=str(uuid.uuid4())))
     except RuntimeError or ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player added successfully."
 
 
 @router.put("", summary="Update a player's data")
-def update_player(player_id: str, new_name: str, new_position: Square, controller: ControllerDep):
+def update_player(player_id: str, new_name: str, new_position: str, controller: ControllerDep):
     try:
         controller.modify_player(player_id, new_name, new_position)
     except RuntimeError as e:

@@ -1,5 +1,5 @@
 import fastapi
-from util import Square, StatusDict, GameHistoryEntry
+from util import StatusDict, GameHistoryEntry
 from controller import ControllerDep
 
 router = fastapi.APIRouter(prefix="/game", tags=["game"])
@@ -9,7 +9,7 @@ def get_game_status(controller: ControllerDep):
     return controller.game_status()
 
 @router.post("/move_player")
-def move_player(player_id: str, new_position: Square, controller: ControllerDep):
+def move_player(player_id: str, new_position: str, controller: ControllerDep):
     try:
         controller.move_player(player_id, new_position)
     except RuntimeError as e:

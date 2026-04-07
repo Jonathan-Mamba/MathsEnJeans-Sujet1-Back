@@ -4,30 +4,6 @@ import pydantic
 import typing
 import random
 
-class Day(enum.StrEnum):
-    LIVRAISON = "Livraison"
-    DOLEANCES = "Doléances"
-    MARCHANDS = "Marchands"
-    LABEUR = "Labeur"
-
-class RouteType(enum.StrEnum):
-    LIVRAISON = "Livraison"
-    DOLEANCES = "Doléances"
-    MARCHANDS = "Marchands"
-    LABEUR = "Labeur"
-    TOUT = "Tout"
-
-ROUTE_ALL: RouteType = RouteType.TOUT
-
-class Square(enum.StrEnum):
-    ENTREPOTS = "Entrepôts royaux"
-    ARTISANTS = "Quartier des artisants"
-    MARCHANDS = "Quartier des marchands"
-    GARDES = "Salle des gardes"
-    PALAIS = "Palais"
-
-CASTLE_SQUARE = Square.PALAIS
-
 class GameStatus(enum.StrEnum):
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
@@ -38,9 +14,9 @@ def get_random_color() -> str:
 
 class Route(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(frozen=True)
-    first_end: Square
-    second_end: Square
-    type: RouteType
+    first_end: str
+    second_end: str
+    type: str
 
     def __hash__(self) -> int:
         return hash((tuple(sorted([self.first_end, self.second_end])), self.type))
@@ -51,43 +27,41 @@ class Route(pydantic.BaseModel):
         raise NotImplemented
     
 class Player(pydantic.BaseModel):
-    #model_config = pydantic.ConfigDict(frozen=True)
     id: str = pydantic.Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    position: Square
+    position: str
     color: str = pydantic.Field(default_factory=get_random_color)
-
 
 class StatusDict(typing.TypedDict):
     status: GameStatus
     day_count: int
     current_player: Player | None
-    current_day_type: Day | None
+    current_day_type: str | None
 
 class PlayerDict(typing.TypedDict):
     id: str
     name: str
     color: str
-    position: Square
+    position: str
 
 class RouteDict(typing.TypedDict):
-    first_end: Square
-    second_end: Square
-    type: RouteType
+    first_end: str
+    second_end: str
+    type: str
 
-class ExportData(typing.TypedDict):
-    players: list[PlayerDict]
-    calendar: list[Day]
-    routes: list[RouteDict]
-    route_types: list[RouteType]
-    route_type_all: RouteType
-    route_colors: dict[RouteType, str]
-    game_state: StatusDict
+class GameHistoryEntry(typing.TypedDict):
+    day_type: str
+    moves: list[tuple[str, str, str]]  # List of (player_id, from_square, to_square)
 
 class ExportDict(typing.TypedDict):
     version: str
-    data: ExportData
+    players: list[PlayerDict | dict]
+    calendar: list[str]
+    routes: list[RouteDict | dict]
+    route_types: list[str]
+    route_type_all: str
+    route_colors: dict[str, str]
+    game_state: StatusDict
+    castle_square: str
+    game_history: list[GameHistoryEntry]
 
-class GameHistoryEntry(typing.TypedDict):
-    day_type: Day
-    moves: list[tuple[str, str, str]]  # List of (player_id, from_square, to_square)
