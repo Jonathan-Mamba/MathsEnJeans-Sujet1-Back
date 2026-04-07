@@ -1,3 +1,5 @@
+import os
+
 import fastapi
 import logging
 import uvicorn
@@ -32,7 +34,6 @@ app.add_middleware(
     allow_origins=[
         "*"
     ],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"], 
 )
@@ -62,4 +63,4 @@ if __name__ == "__main__":
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))

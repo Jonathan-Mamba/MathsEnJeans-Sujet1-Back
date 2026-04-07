@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class DayCreate(BaseModel):
     day_type: str
-
+ 
 
 class DayUpdate(BaseModel):
     day_number: int

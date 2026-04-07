@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 
 # Expose port (Railway assigns PORT env var, but default to 8000)
-EXPOSE 8000
+EXPOSE ${PORT:-8000}
 
 # Health check (optional but recommended for Railway)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
