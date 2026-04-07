@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY src/ ./src/
 
-# Health check (optional but recommended for Railway)
+EXPOSE 8080
 
 
 # Run the app
