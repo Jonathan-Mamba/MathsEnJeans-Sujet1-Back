@@ -42,7 +42,7 @@ class GameModel:
         self.simulated = False
         self.player_moved = False
 
-        self.player_iterator = itertools.cycle(enumerate([]))
+        self.player_iterator: itertools.cycle[tuple[int, Player]] = itertools.cycle(enumerate([]))
         self.players_dict: dict[str, Player] = {}
 
         self.calendar: list[str] = []
@@ -129,6 +129,8 @@ class GameModel:
     def add_square(self, square: str):
         if square in self.squares:
             raise RuntimeError("Square already exists.")
+        if square.strip() == "":
+            raise RuntimeError("Square name cannot be empty.")
         self.squares.add(square)
 
     @in_progress("Cannot modify squares after the game has started.")
@@ -184,13 +186,15 @@ class GameModel:
     def filter_routes_of_type(self, route_type: str, routes: set[Route]) -> set[Route]:
         return {route for route in routes if route.type == route_type or route.type == self.route_type_all}
     
-        # Route types methods ---------------------------------------------------------------
+    # Route types methods ---------------------------------------------------------------
     def get_route_types(self) -> dict[str, str]:
         return self.route_types
 
     def add_route_type(self, route_type: str):
         if route_type in self.route_types:
             raise RuntimeError("Route type already exists.")
+        if route_type.strip() == "":
+            raise RuntimeError("Route type cannot be empty.")
         self.route_types[route_type] = util.get_random_color()
 
     def remove_route_type(self, route_type: str):

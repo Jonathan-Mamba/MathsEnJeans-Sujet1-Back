@@ -4,7 +4,7 @@ import uvicorn
 import calendar_endpoints
 import game_endpoints
 import player_endpoints
-import map_endpoints
+import route_endpoints
 import square_endpoints
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -38,7 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(player_endpoints.router)
-app.include_router(map_endpoints.router)
+app.include_router(route_endpoints.router)
 app.include_router(square_endpoints.router)  
 app.include_router(calendar_endpoints.router)
 app.include_router(game_endpoints.router)

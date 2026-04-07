@@ -19,7 +19,7 @@ class Route(pydantic.BaseModel):
     type: str
 
     def __hash__(self) -> int:
-        return hash((tuple(sorted([self.first_end, self.second_end])), self.type))
+        return hash((":::".join(sorted([self.first_end, self.second_end])), self.type))
     
     def __eq__(self, value: object) -> bool:
         if type(value) == Route:
