@@ -10,10 +10,13 @@ class PlayerCreate(BaseModel):
     name: str
     position: str
 
-
 class PlayerUpdate(BaseModel):
-    new_name: str
-    new_position: str
+    id: str
+    name: str
+    position: str
+
+class PlayerDelete(BaseModel):
+    id: str
 
 
 router = APIRouter(prefix="/players", tags=["players"])
@@ -33,19 +36,19 @@ def add_player(params: PlayerCreate, controller: ControllerDep):
     return "Player added successfully."
 
 
-@router.put("/{player_id}", summary="Update a player's data")
-def update_player(player_id: str, params: PlayerUpdate, controller: ControllerDep):
+@router.put("/", summary="Update a player's data")
+def update_player(params: PlayerUpdate, controller: ControllerDep):
     try:
-        controller.modify_player(player_id, params.new_name, params.new_position)
+        controller.modify_player(params.id, params.name, params.position)
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player updated successfully."
 
 
-@router.delete("/{player_id}", summary="Remove a player")
-def remove_player(player_id: str, controller: ControllerDep):
+@router.delete("/", summary="Remove a player")
+def remove_player(params: PlayerDelete, controller: ControllerDep):
     try:
-        controller.remove_player(player_id)
+        controller.remove_player(params.id)
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player removed successfully."

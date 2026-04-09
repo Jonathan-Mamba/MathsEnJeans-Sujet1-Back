@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class SquareCreate(BaseModel):
-    square_name: str
+    name: str
 
 
 router = APIRouter(prefix="/squares", tags=["squares"])
@@ -19,16 +19,16 @@ def get_all_squares(controller: ControllerDep):
 @router.post("", summary="Add a new square", response_model=str)
 def add_square(params: SquareCreate, controller: ControllerDep):
     try:
-        controller.add_square(params.square_name)
+        controller.add_square(params.name)
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Square added successfully."
 
 
-@router.delete("/{square_name}", summary="Remove a square")
-def remove_square(square_name: str, controller: ControllerDep):
+@router.delete("/", summary="Remove a square")
+def remove_square(params: SquareCreate, controller: ControllerDep):
     try:
-        controller.remove_square(square_name)
+        controller.remove_square(params.name)
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Square removed successfully."

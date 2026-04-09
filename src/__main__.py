@@ -14,8 +14,6 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from controller import ControllerDep
 
 
-
-
 app = fastapi.FastAPI()
 
 # Middleware order matters - add trusted hosts first
@@ -40,7 +38,7 @@ app.include_router(game_endpoints.router)
 
 @app.get("/", summary="Root Endpoint", response_model=dict)
 async def root():
-    return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.0.0"}
+    return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.1.0"}
 
 @app.get("/export", summary="Get the data of the model")
 def export_data(controller: ControllerDep):
