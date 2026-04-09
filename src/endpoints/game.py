@@ -1,6 +1,6 @@
 import fastapi
-from util import StatusDict, GameHistoryEntry
-from controller import ControllerDep
+from src.util import StatusDict, GameHistoryEntry
+from src.controller import ControllerDep
 from pydantic import BaseModel
 
 

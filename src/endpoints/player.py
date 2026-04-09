@@ -2,8 +2,8 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from typing import List
 from pydantic import BaseModel
-from controller import ControllerDep
-from util import Player
+from src.controller import ControllerDep
+from src.util import Player
 
 
 class PlayerCreate(BaseModel):

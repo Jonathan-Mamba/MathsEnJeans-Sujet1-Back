@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from controller import ControllerDep
-from util import Route
+from src.controller import ControllerDep
+from src.util import Route
 from pydantic import BaseModel
 
 

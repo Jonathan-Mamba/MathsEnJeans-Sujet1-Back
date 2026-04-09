@@ -1,6 +1,6 @@
 import fastapi
 from fastapi import HTTPException
-from controller import ControllerDep
+from src.controller import ControllerDep
 from typing import List
 from pydantic import BaseModel
 

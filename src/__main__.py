@@ -1,25 +1,21 @@
-import os
-import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import fastapi
 import logging
 import uvicorn
-import calendar_endpoints
-import game_endpoints
-import player_endpoints
-import route_endpoints
-import square_endpoints
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from controller import ControllerDep
+from fastapi.middleware.gzip import GZipMiddleware
+import pathlib
+import sys
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+from src.endpoints import calendar, game, player, route, square
+from src.controller import ControllerDep
 
 
 app = fastapi.FastAPI()
 
-# Middleware order matters - add trusted hosts first
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -30,11 +26,11 @@ app.add_middleware(
     allow_headers=["*"], 
 )
 
-app.include_router(player_endpoints.router)
-app.include_router(route_endpoints.router)
-app.include_router(square_endpoints.router)  
-app.include_router(calendar_endpoints.router)
-app.include_router(game_endpoints.router)
+app.include_router(player.router)
+app.include_router(route.router)
+app.include_router(square.router)  
+app.include_router(calendar.router)
+app.include_router(game.router)
 
 @app.get("/", summary="Root Endpoint", response_model=dict)
 async def root():
@@ -54,5 +50,4 @@ if __name__ == "__main__":
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
-    logging.info(f"Starting the Maths en Jeans Game API {(os.getenv('PORT') or 'unknown port')}...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

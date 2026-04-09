@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 import fastapi
-from controller import ControllerDep
+from src.controller import ControllerDep
 from pydantic import BaseModel
 
 
