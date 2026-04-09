@@ -14,4 +14,4 @@ COPY src/ ./src/
 EXPOSE 8000
 
 # Run the app
-CMD ["sh", "-c", "fastapi run src.__main__:app --port 8000 --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "fastapi run src/__main__.py --port 8000 --forwarded-allow-ips='*'"]
