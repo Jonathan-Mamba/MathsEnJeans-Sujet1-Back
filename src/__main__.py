@@ -14,7 +14,9 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from controller import ControllerDep
 
 
-app = fastapi.FastAPI(redirect_slashes=False)
+
+
+app = fastapi.FastAPI()
 
 # Middleware order matters - add trusted hosts first
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
@@ -54,5 +56,5 @@ if __name__ == "__main__":
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
-    logging.info(f"Starting the Maths en Jeans Game API {()}")
+    logging.info(f"Starting the Maths en Jeans Game API {(os.getenv('PORT') or 'unknown port')}...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

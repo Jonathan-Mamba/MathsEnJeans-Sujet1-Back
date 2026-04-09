@@ -27,7 +27,7 @@ def get_all_players(controller: ControllerDep):
 @router.post("", summary="Add a new player")
 def add_player(params: PlayerCreate, controller: ControllerDep):
     try:
-        controller.add_player(Player(name=params.name, position=params.position, id=str(uuid.uuid4())))
+        controller.add_player(Player(name=params.name, position=params.position))
     except RuntimeError or ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player added successfully."

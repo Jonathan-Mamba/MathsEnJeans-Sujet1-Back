@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY src/ ./src/
 
-EXPOSE 8080
+EXPOSE 8000
 
 
 # Run the app
-CMD ["sh", "-c", "cd /app && python -m src"]
+CMD ["sh", "-c", "python -m src"]
