@@ -36,7 +36,7 @@ def add_day(params: DayCreate, controller: ControllerDep):
     return "Day added successfully."
 
 
-@router.put("", summary="Modify a day")
+@router.put("/", summary="Modify a day")
 def modify_day(day: DayUpdate, controller: ControllerDep):
     try:    
         controller.modify_day(day.day_number, day.day_type)

@@ -1,6 +1,5 @@
 import fastapi
 import logging
-import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -40,14 +39,9 @@ async def root():
 def export_data(controller: ControllerDep):
     return controller.export_model()
 
-@app.post("/preset")
-def import_(controller: ControllerDep):
-    controller.import_preset()
-
 if __name__ == "__main__":    
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
-    uvicorn.run(app, host="0.0.0.0", port=8000)

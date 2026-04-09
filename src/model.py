@@ -4,8 +4,8 @@ import itertools
 import random
 import logging
 from functools import wraps
-import util
-from util import Player, Route, GameStatus, StatusDict, ExportDict
+import src.util as util
+from src.util import Player, Route, GameStatus, StatusDict, ExportDict  
 
 
 TEST_MODE = True

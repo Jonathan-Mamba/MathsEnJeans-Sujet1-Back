@@ -11,12 +11,12 @@ class SquareCreate(BaseModel):
 router = APIRouter(prefix="/squares", tags=["squares"])
 
 
-@router.get("", summary="Get all squares", response_model=list[str])
+@router.get("/", summary="Get all squares", response_model=list[str])
 def get_all_squares(controller: ControllerDep):
     return controller.get_squares()
 
 
-@router.post("", summary="Add a new square", response_model=str)
+@router.post("/", summary="Add a new square", response_model=str)
 def add_square(params: SquareCreate, controller: ControllerDep):
     try:
         controller.add_square(params.name)

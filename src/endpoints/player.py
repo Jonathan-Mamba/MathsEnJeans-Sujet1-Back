@@ -22,12 +22,12 @@ class PlayerDelete(BaseModel):
 router = APIRouter(prefix="/players", tags=["players"])
 
 
-@router.get("", summary="Get all players", response_model=List[Player])
+@router.get("/", summary="Get all players", response_model=List[Player])
 def get_all_players(controller: ControllerDep):
     return controller.get_players()
 
 
-@router.post("", summary="Add a new player")
+@router.post("/", summary="Add a new player")
 def add_player(params: PlayerCreate, controller: ControllerDep):
     try:
         controller.add_player(Player(name=params.name, position=params.position))

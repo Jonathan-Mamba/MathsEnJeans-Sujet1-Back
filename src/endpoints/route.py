@@ -17,7 +17,7 @@ class RouteCreate(BaseModel):
 router = APIRouter(prefix="/routes", tags=["routes"])
 
 
-@router.get("", summary="Get all routes", response_model=list[Route])
+@router.get("/", summary="Get all routes", response_model=list[Route])
 def get_all_routes(controller: ControllerDep):
     return controller.get_all_routes()
 

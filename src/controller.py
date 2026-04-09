@@ -1,6 +1,6 @@
 import threading
-from util import Player, Route, StatusDict, GameHistoryEntry, ExportDict
-from model import GameModel
+from src.util import Player, Route, StatusDict, GameHistoryEntry, ExportDict
+from src.model import GameModel
 from fastapi import Depends
 from typing import Annotated
 

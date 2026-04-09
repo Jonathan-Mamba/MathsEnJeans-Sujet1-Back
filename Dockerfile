@@ -13,6 +13,5 @@ COPY src/ ./src/
 
 EXPOSE 8000
 
-
 # Run the app
-CMD ["sh", "-c", "python -m src"]
+CMD ["sh", "-c", "fastapi run src.__main__:app --port 8000 --forwarded-allow-ips='*'"]
