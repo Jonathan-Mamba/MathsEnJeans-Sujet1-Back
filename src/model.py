@@ -302,7 +302,7 @@ class GameModel:
         if (
             self.day_count > len(self.calendar) 
             or all(player.position == self.castle_square for player in self.players_dict.values()) 
-            or (self.player_moved is False and self.day_count > 1)
+            or (not self.player_moved and self.day_count > 1)
         ):
             self.at_game_end()
         self.player_moved = False
@@ -335,42 +335,14 @@ class GameModel:
         self.game_history = []
 
     def set_next_current_player(self):
-        index, self.current_player = next(self.player_iterator)
-        if index == 0:
-            self.at_new_turn()
-        if (self.current_player is not None) and (not self.can_move(self.current_player)):
-            self.set_next_current_player()
+        ran_once = False
+        while (self.current_player is not None) and (not self.can_move(self.current_player)) and ran_once:
+            index, self.current_player = next(self.player_iterator)
+            ran_once = True
+            if index == 0:
+                self.at_new_turn()
 
     # other methods ----------------------------------------------------------------------
-    def get_event(self, request: fastapi.Request):
-        async def event_generator():
-            day = self.day_count
-            if self.current_player is not None:
-                player = self.current_player.model_copy()
-            else:
-                player = None
-            while True:
-                if await request.is_disconnected():
-                    break
-
-                if day != self.day_count:
-                    yield {"event": "new_day", "data": self.day_count}
-                    day = self.day_count
-
-                if self.status == GameStatus.COMPLETED:
-                    yield {"event": "game_finished", "data": "The game has finished."}
-                    break
-
-                if player != self.current_player:
-                    yield {"event": "player_moved", "data": self.current_player}
-                    if self.current_player is not None:
-                        player = self.current_player.model_copy()
-                    else:
-                        player = None
-
-                await asyncio.sleep(0.1)
-        return event_generator()
-
     def export(self) -> ExportDict:
         return {
             "version": "1.0",

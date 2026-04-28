@@ -1,9 +1,10 @@
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import List
 from pydantic import BaseModel
 from src.controller import ControllerDep
 from src.util import Player
+from src.rate_limiter import rate_limit
 
 
 class PlayerCreate(BaseModel):
@@ -21,14 +22,15 @@ class PlayerDelete(BaseModel):
 
 router = APIRouter(prefix="/players", tags=["players"])
 
-
+@rate_limit
 @router.get("/", summary="Get all players", response_model=List[Player])
-def get_all_players(controller: ControllerDep):
+def get_all_players(request: Request, controller: ControllerDep):
     return controller.get_players()
 
 
+@rate_limit
 @router.post("/", summary="Add a new player")
-def add_player(params: PlayerCreate, controller: ControllerDep):
+def add_player(request: Request, params: PlayerCreate, controller: ControllerDep):
     try:
         controller.add_player(Player(name=params.name, position=params.position))
     except RuntimeError or ValueError as e:
@@ -36,8 +38,9 @@ def add_player(params: PlayerCreate, controller: ControllerDep):
     return "Player added successfully."
 
 
+@rate_limit
 @router.put("/", summary="Update a player's data")
-def update_player(params: PlayerUpdate, controller: ControllerDep):
+def update_player(request: Request, params: PlayerUpdate, controller: ControllerDep):
     try:
         controller.modify_player(params.id, params.name, params.position)
     except RuntimeError as e:
@@ -45,8 +48,9 @@ def update_player(params: PlayerUpdate, controller: ControllerDep):
     return "Player updated successfully."
 
 
+@rate_limit
 @router.delete("/", summary="Remove a player")
-def remove_player(params: PlayerDelete, controller: ControllerDep):
+def remove_player(request: Request, params: PlayerDelete, controller: ControllerDep):
     try:
         controller.remove_player(params.id)
     except RuntimeError as e:

@@ -24,7 +24,7 @@ class Route(pydantic.BaseModel):
     def __eq__(self, value: object) -> bool:
         if type(value) == Route:
             return hash(self) == hash(value)
-        raise NotImplemented
+        return NotImplemented
     
 class Player(pydantic.BaseModel):
     id: str = pydantic.Field(default_factory=lambda: str(uuid.uuid4()))
