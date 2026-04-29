@@ -65,3 +65,7 @@ class ExportDict(typing.TypedDict):
     castle_square: str
     game_history: list[GameHistoryEntry]
 
+class EventType(pydantic.BaseModel):
+    name: str
+    description: str
+

@@ -35,13 +35,8 @@ app.include_router(game.router)
 
 @rate_limit
 @app.get("/", summary="Root Endpoint", response_model=dict)
-async def root(request: Request):
+async def root():
     return {"message": "Welcome to the Maths en Jeans Game API!", "version": "1.1.0"}
-
-@rate_limit
-@app.get("/export", summary="Get the data of the model")
-def export_data(request: Request, controller: ControllerDep):
-    return controller.export_model()
 
 logging.basicConfig(
     level=logging.INFO,
