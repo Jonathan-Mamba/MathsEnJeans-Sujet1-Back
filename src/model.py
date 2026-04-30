@@ -1,11 +1,8 @@
-import fastapi
-import asyncio
 import itertools
 import random
-import logging
+from src.event_manager import get_event_manager
 from functools import wraps
-import src.util as util
-from src.util import Player, Route, GameStatus, StatusDict, ExportDict  
+from src.util import Player, Route, GameStatus, StatusDict, ExportDict, get_random_color, GameHistoryEntry  
 
 
 TEST_MODE = True
@@ -21,33 +18,21 @@ def in_progress(error_message: str):
     return decorator
 
 
-def validate_data(data: dict) -> dict:
-    final_dict = {}
-    players = data.get("players", [])
-    routes = data.get("routes", [])
-    route_types = data.get("route_types", [])
-    route_type_all = data.get("route_type_all", "")
-    route_colors = data.get("route_colors", {})
-    game_state = data.get("game_state", {})
-    calendar = data.get("calendar", [])
-    
-    return final_dict
-
 class GameModel:
     def __init__(self):
         self.day_count = 0
         self.current_player: Player | None = None
         self.status = GameStatus.NOT_STARTED
-        self.game_history: list[util.GameHistoryEntry] = []
+        self.game_history: list[GameHistoryEntry] = []
         self.simulated = False
         self.player_moved = False
 
-        self.player_iterator: itertools.cycle[tuple[int, Player]] = itertools.cycle(enumerate([]))
+        self.player_iterator = itertools.cycle[tuple[int, Player]](enumerate([]))
         self.players_dict: dict[str, Player] = {}
 
         self.calendar: list[str] = []
         self.routes: set[Route] = set()
-        self.route_types = {i: util.get_random_color() for i in ["Livraison", "Doléances", "Marchands", "Labeur", "Tout"]}
+        self.route_types = {i: get_random_color() for i in ["Livraison", "Doléances", "Marchands", "Labeur", "Tout"]}
         self.route_type_all = "Tout"
 
         self.castle_square = "Palais"
@@ -190,13 +175,15 @@ class GameModel:
     def get_route_types(self) -> dict[str, str]:
         return self.route_types
 
-    def add_route_type(self, route_type: str):
+    @in_progress("Cannot modify route types after the game has started.")
+    def add_route_type(self, route_type: str, color: str | None = None):
         if route_type in self.route_types:
             raise RuntimeError("Route type already exists.")
         if route_type.strip() == "":
             raise RuntimeError("Route type cannot be empty.")
-        self.route_types[route_type] = util.get_random_color()
+        self.route_types[route_type] = color if color else get_random_color()
 
+    @in_progress("Cannot modify route types after the game has started.")
     def remove_route_type(self, route_type: str):
         if route_type not in self.route_types:
             raise RuntimeError("Route type not found.")
@@ -253,7 +240,7 @@ class GameModel:
         day_moves = self.game_history[self.day_count - 1]["moves"]
         day_moves.append((player_id, old_position, new_position))
 
-    def simulate_game(self):
+    async def simulate_game(self):
         if self.status == GameStatus.NOT_STARTED:
             raise RuntimeError("Cannot simulate game if game is not started.")
         
@@ -266,7 +253,7 @@ class GameModel:
                 (route.first_end if route.second_end == self.current_player.position else route.second_end)
                 for route in routes
             ]
-            self.move_player(self.current_player.id, random.choice(available_squares))
+            await self.move_player(self.current_player.id, random.choice(available_squares))
 
     def can_move(self, player: Player) -> bool:
         day_type = self.calendar[self.day_count - 1]
@@ -276,7 +263,7 @@ class GameModel:
             return False
         return len(self.filter_routes_of_type(day_type, routes)) > 0
 
-    def move_player(self, player_id: str, new_position: str):
+    async def move_player(self, player_id: str, new_position: str):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Cannot move players when the game is not in progress.")
         
@@ -295,26 +282,27 @@ class GameModel:
         self.add_to_history(player.id, player.position, new_position)
         player.position = new_position
         self.player_moved = True
-        self.set_next_current_player()
+        await self.set_next_current_player()
 
-    def at_new_turn(self):
+    async def at_new_turn(self):
         self.day_count += 1
         if (
             self.day_count > len(self.calendar) 
             or all(player.position == self.castle_square for player in self.players_dict.values()) 
             or (not self.player_moved and self.day_count > 1)
         ):
-            self.at_game_end()
+            await self.at_game_end()
         self.player_moved = False
 
-    def at_game_end(self):
+    async def at_game_end(self):
         self.status = GameStatus.COMPLETED
         self.day_count = 0
         self.current_player = None
         self.player_iterator = itertools.cycle(enumerate([]))
+        await get_event_manager().broadcast_event("game.ended", {})
 
     @in_progress("Game has already started.")
-    def start_game(self):        
+    async def start_game(self):        
         if not self.players_dict:
             raise RuntimeError("Cannot start game without players.")
         if not self.calendar:
@@ -325,22 +313,22 @@ class GameModel:
         self.status = GameStatus.IN_PROGRESS
         self.game_history = []
         self.player_iterator = itertools.cycle(enumerate(self.players_dict.values()))
-        self.set_next_current_player()
+        await self.set_next_current_player()
 
-    def stop_game(self):
+    async def stop_game(self):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Game is not in progress.")
-        self.at_game_end()
+        await self.at_game_end()
         self.status = GameStatus.NOT_STARTED
         self.game_history = []
 
-    def set_next_current_player(self):
+    async def set_next_current_player(self):
         ran_once = False
         while (self.current_player is not None) and (not self.can_move(self.current_player)) and ran_once:
             index, self.current_player = next(self.player_iterator)
             ran_once = True
             if index == 0:
-                self.at_new_turn()
+               await self.at_new_turn()
 
     # other methods ----------------------------------------------------------------------
     def export(self) -> ExportDict:

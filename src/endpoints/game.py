@@ -2,8 +2,8 @@ import fastapi
 from src.util import StatusDict, GameHistoryEntry
 from src.controller import ControllerDep
 from pydantic import BaseModel
-from fastapi import Request
 from src.rate_limiter import rate_limit
+from src.event_manager import EventManagerDep
 
 class MovePlayer(BaseModel):
     player_id: str
@@ -21,10 +21,10 @@ async def get_game_status(controller: ControllerDep):
 
 @rate_limit
 @router.post("/move_player")
-async def move_player(move: MovePlayer, controller: ControllerDep):
+async def move_player(move: MovePlayer, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.move_player(move.player_id, move.new_position)
-        await controller.get_event_manager().broadcast_event("game.player.moved", {"player_id": move.player_id, "new_position": move.new_position})
+        await event_manager.broadcast_event("game.player.moved", {"id": move.player_id, "position": move.new_position})
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Player moved successfully."
@@ -32,10 +32,10 @@ async def move_player(move: MovePlayer, controller: ControllerDep):
 
 @rate_limit
 @router.post("/start")
-async def start_game(controller: ControllerDep):
+async def start_game(controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.start_game()
-        await controller.get_event_manager().broadcast_event("game.started", {})
+        await event_manager.broadcast_event("game.started", {})
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Game started successfully."
@@ -43,10 +43,10 @@ async def start_game(controller: ControllerDep):
 
 @rate_limit
 @router.post('/end')
-async def stop_game(controller: ControllerDep):
+async def stop_game(controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.stop_game()
-        await controller.get_event_manager().broadcast_event("game.ended", {})
+        await event_manager.broadcast_event("game.ended", {})
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Game ended successfully."
@@ -54,10 +54,10 @@ async def stop_game(controller: ControllerDep):
 
 @rate_limit
 @router.post("/simulate")
-async def simulate_game(controller: ControllerDep):
+async def simulate_game(controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.simulate_game()
-        await controller.get_event_manager().broadcast_event("game.simulated", {})
+        await event_manager.broadcast_event("game.simulated", {})
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Game simulated successfully."

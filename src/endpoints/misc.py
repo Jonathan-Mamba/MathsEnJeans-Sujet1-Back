@@ -1,9 +1,10 @@
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from src.controller import ControllerDep
 from src.rate_limiter import rate_limit
 from typing import AsyncIterable
 from fastapi.sse import ServerSentEvent, EventSourceResponse
+from src.event_manager import EventManagerDep
 
 
 router = APIRouter(prefix="", tags=["misc"])
@@ -17,6 +18,8 @@ async def export_data(controller: ControllerDep):
 
 @rate_limit
 @router.get("/events", summary="Stream updates over SSE", response_class=EventSourceResponse)
-async def stream_items(controller: ControllerDep) -> AsyncIterable[ServerSentEvent]:
-    async for event in controller.get_event_manager().event_generator():
+async def stream_items(request: Request, event_manager: EventManagerDep) -> AsyncIterable[ServerSentEvent]:
+    async for event in event_manager.event_generator(request):
+        import logging
+        logging.info(f"Emitting event: {event}")
         yield event

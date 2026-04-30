@@ -1,10 +1,10 @@
-import uuid
 from fastapi import APIRouter, HTTPException, Request
 from typing import List
 from pydantic import BaseModel
 from src.controller import ControllerDep
 from src.util import Player
 from src.rate_limiter import rate_limit
+from src.event_manager import EventManagerDep
 
 
 class PlayerCreate(BaseModel):
@@ -30,11 +30,11 @@ async def get_all_players(controller: ControllerDep):
 
 @rate_limit
 @router.post("/", summary="Add a new player")
-async def add_player(params: PlayerCreate, controller: ControllerDep):
+async def add_player(params: PlayerCreate, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         player = Player(name=params.name, position=params.position)
         await controller.add_player(player)
-        await controller.get_event_manager().broadcast_event("game.player.added", {"player": player.model_dump()})
+        await event_manager.broadcast_event("game.player.added", {"player": player.model_dump()})
     except RuntimeError or ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player added successfully."
@@ -42,10 +42,10 @@ async def add_player(params: PlayerCreate, controller: ControllerDep):
 
 @rate_limit
 @router.put("/", summary="Update a player's data")
-async def update_player(params: PlayerUpdate, controller: ControllerDep):
+async def update_player(params: PlayerUpdate, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.modify_player(params.id, params.name, params.position)
-        await controller.get_event_manager().broadcast_event("game.player.updated", {"player": params.model_dump()})
+        await event_manager.broadcast_event("game.player.modified", {"player": params.model_dump()})
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player updated successfully."
@@ -53,10 +53,10 @@ async def update_player(params: PlayerUpdate, controller: ControllerDep):
 
 @rate_limit
 @router.delete("/", summary="Remove a player")
-async def remove_player(params: PlayerDelete, controller: ControllerDep):
+async def remove_player(params: PlayerDelete, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.remove_player(params.id)
-        await controller.get_event_manager().broadcast_event("game.player.removed", {"id": params.id})
+        await event_manager.broadcast_event("game.player.removed", {"id": params.id})
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player removed successfully."

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Request
 import fastapi
-from src.controller import ControllerDep
+from fastapi import APIRouter
 from pydantic import BaseModel
+from src.controller import ControllerDep
 from src.rate_limiter import rate_limit
+from src.event_manager import EventManagerDep
 
 
 class SquareCreate(BaseModel):
@@ -20,10 +21,10 @@ async def get_all_squares(controller: ControllerDep):
 
 @rate_limit
 @router.post("/", summary="Add a new square", response_model=str)
-async def add_square(params: SquareCreate, controller: ControllerDep):
+async def add_square(params: SquareCreate, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.add_square(params.name)
-        await controller.get_event_manager().broadcast_event("game.square.added", {"name": params.name})
+        await event_manager.broadcast_event("game.square.added", {"name": params.name})
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Square added successfully."
@@ -31,10 +32,10 @@ async def add_square(params: SquareCreate, controller: ControllerDep):
 
 @rate_limit
 @router.delete("/", summary="Remove a square")
-async def remove_square(params: SquareCreate, controller: ControllerDep):
+async def remove_square(params: SquareCreate, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.remove_square(params.name)
-        await controller.get_event_manager().broadcast_event("game.square.removed", {"name": params.name})
+        await event_manager.broadcast_event("game.square.removed", {"name": params.name})
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Square removed successfully."
