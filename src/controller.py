@@ -57,15 +57,15 @@ class Controller:
     
     async def start_game(self):
         async with self._game_lock:
-             await self._game_model.start_game()
+            self._game_model.start_game()
 
     async def move_player(self, player_id: str, new_position: str):
         async with self._game_lock:
-            await self._game_model.move_player(player_id, new_position)
+            self._game_model.move_player(player_id, new_position)
 
     async def simulate_game(self):
         async with self._game_lock:
-            await self._game_model.simulate_game()
+            self._game_model.simulate_game()
 
     async def get_castle_square(self) -> str:
         async with self._game_lock:
@@ -73,7 +73,7 @@ class Controller:
     
     async def stop_game(self):
         async with self._game_lock:
-            await self._game_model.stop_game()
+            self._game_model.stop_game()
 
     async def get_game_history(self) -> list[GameHistoryEntry]:
         async with self._game_lock:        

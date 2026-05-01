@@ -1,6 +1,7 @@
 import fastapi
 import logging
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import pathlib
 import sys
@@ -11,6 +12,12 @@ from src.rate_limiter import rate_limit
 app = fastapi.FastAPI()
 
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1024,
+    compresslevel=5,
+)
 
 app.add_middleware(
     CORSMiddleware,

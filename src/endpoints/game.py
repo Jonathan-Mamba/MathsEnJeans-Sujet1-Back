@@ -24,7 +24,12 @@ async def get_game_status(controller: ControllerDep):
 async def move_player(move: MovePlayer, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.move_player(move.player_id, move.new_position)
-        await event_manager.broadcast_event("game.player.moved", {"id": move.player_id, "position": move.new_position})
+        await event_manager.broadcast_event("game.player.moved", {
+            "id": move.player_id, 
+            "position": move.new_position, 
+            "status": await controller.game_status(),
+            "history": await controller.get_game_history()
+            })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Player moved successfully."
@@ -35,7 +40,10 @@ async def move_player(move: MovePlayer, controller: ControllerDep, event_manager
 async def start_game(controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.start_game()
-        await event_manager.broadcast_event("game.started", {})
+        await event_manager.broadcast_event("game.started", {
+            "status": await controller.game_status(),
+            "history": await controller.get_game_history()
+        })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Game started successfully."
@@ -46,7 +54,10 @@ async def start_game(controller: ControllerDep, event_manager: EventManagerDep):
 async def stop_game(controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.stop_game()
-        await event_manager.broadcast_event("game.ended", {})
+        await event_manager.broadcast_event("game.ended", {
+            "status": await controller.game_status(),
+            "history": await controller.get_game_history()
+        })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Game ended successfully."
@@ -57,7 +68,10 @@ async def stop_game(controller: ControllerDep, event_manager: EventManagerDep):
 async def simulate_game(controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.simulate_game()
-        await event_manager.broadcast_event("game.simulated", {})
+        await event_manager.broadcast_event("game.simulated", {
+            "status": await controller.game_status(),
+            "history": await controller.get_game_history()
+        })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Game simulated successfully."

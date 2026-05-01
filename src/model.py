@@ -1,11 +1,8 @@
 import random
 from functools import wraps
 from itertools import cycle
-from src.event_manager import get_event_manager
 from src.util import Player, Route, GameStatus, StatusDict, ExportDict, get_random_color, GameHistoryEntry  
 
-
-TEST_MODE = True
 
 def in_progress(error_message: str):
     def decorator(func):
@@ -17,16 +14,6 @@ def in_progress(error_message: str):
         return wrapper
     return decorator
 
-
-def in_progress_async(error_message: str):
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(self: 'GameModel', *args, **kwargs):
-            if self.status != GameStatus.IN_PROGRESS:
-                return await func(self, *args, **kwargs)
-            raise RuntimeError(error_message) 
-        return wrapper
-    return decorator
 
 class GameModel:
     def __init__(self):
@@ -250,7 +237,7 @@ class GameModel:
         day_moves = self.game_history[self.day_count - 1]["moves"]
         day_moves.append((player_id, old_position, new_position))
 
-    async def simulate_game(self):
+    def simulate_game(self):
         if self.status == GameStatus.NOT_STARTED:
             raise RuntimeError("Cannot simulate game if game is not started.")
         
@@ -263,7 +250,7 @@ class GameModel:
                 (route.first_end if route.second_end == self.current_player.position else route.second_end)
                 for route in routes
             ]
-            await self.move_player(self.current_player.id, random.choice(available_squares))
+            self.move_player(self.current_player.id, random.choice(available_squares))
 
     def can_move(self, player: Player) -> bool:
         day_type = self.calendar[self.day_count - 1]
@@ -273,7 +260,7 @@ class GameModel:
             return False
         return len(self.filter_routes_of_type(day_type, routes)) > 0
 
-    async def move_player(self, player_id: str, new_position: str):
+    def move_player(self, player_id: str, new_position: str):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Cannot move players when the game is not in progress.")
         
@@ -292,27 +279,26 @@ class GameModel:
         self.add_to_history(player.id, player.position, new_position)
         player.position = new_position
         self.player_moved = True
-        await self.set_next_current_player()
+        self.set_next_current_player()
 
-    async def at_new_turn(self):
+    def at_new_turn(self):
         self.day_count += 1
         if (
             self.day_count > len(self.calendar) 
             or all(player.position == self.castle_square for player in self.players_dict.values()) 
             or (not self.player_moved and self.day_count > 1)
         ):
-            await self.at_game_end()
+            self.at_game_end()
         self.player_moved = False
 
-    async def at_game_end(self):
+    def at_game_end(self):
         self.status = GameStatus.COMPLETED
         self.day_count = 0
         self.current_player = None
         self.player_iterator = cycle(enumerate([]))
-        await get_event_manager().broadcast_event("game.ended", {})
 
-    @in_progress_async("Game has already started.")
-    async def start_game(self):        
+    @in_progress("Game has already started.")
+    def start_game(self):        
         if not self.players_dict:
             raise RuntimeError("Cannot start game without players.")
         if not self.calendar:
@@ -323,22 +309,22 @@ class GameModel:
         self.status = GameStatus.IN_PROGRESS
         self.game_history = []
         self.player_iterator = cycle(enumerate(self.players_dict.values()))
-        await self.set_next_current_player()
+        self.set_next_current_player()
 
-    async def stop_game(self):
+    def stop_game(self):
         if self.status != GameStatus.IN_PROGRESS:
             raise RuntimeError("Game is not in progress.")
-        await self.at_game_end()
+        self.at_game_end()
         self.status = GameStatus.NOT_STARTED
         self.game_history = []
 
-    async def set_next_current_player(self):
+    def set_next_current_player(self):
         ran_once = False
-        while (self.current_player is not None) and (not self.can_move(self.current_player)) and ran_once:
+        while (self.current_player is not None) and (not self.can_move(self.current_player)) or not ran_once:
             index, self.current_player = next(self.player_iterator)
             ran_once = True
             if index == 0:
-               await self.at_new_turn()
+               self.at_new_turn()
 
     # other methods ----------------------------------------------------------------------
     def export(self) -> ExportDict:
@@ -350,9 +336,10 @@ class GameModel:
             "route_type_all": self.route_type_all,
             "castle_square": self.castle_square,
             "route_colors": self.route_types,
-            "game_state": self.game_status(),
+            "game_status": self.game_status(),
             "calendar": self.calendar,
-            "game_history": self.game_history
+            "game_history": self.game_history,
+            "squares": self.get_squares()
         }
     
     def import_data(self, imported_dict: ExportDict) -> None:

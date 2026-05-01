@@ -61,7 +61,8 @@ class ExportDict(typing.TypedDict):
     route_types: list[str]
     route_type_all: str
     route_colors: dict[str, str]
-    game_state: StatusDict
+    game_status: StatusDict
     castle_square: str
     game_history: list[GameHistoryEntry]
+    squares: list[str]
 
