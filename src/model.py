@@ -1,7 +1,7 @@
-import itertools
 import random
-from src.event_manager import get_event_manager
 from functools import wraps
+from itertools import cycle
+from src.event_manager import get_event_manager
 from src.util import Player, Route, GameStatus, StatusDict, ExportDict, get_random_color, GameHistoryEntry  
 
 
@@ -18,6 +18,16 @@ def in_progress(error_message: str):
     return decorator
 
 
+def in_progress_async(error_message: str):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self: 'GameModel', *args, **kwargs):
+            if self.status != GameStatus.IN_PROGRESS:
+                return await func(self, *args, **kwargs)
+            raise RuntimeError(error_message) 
+        return wrapper
+    return decorator
+
 class GameModel:
     def __init__(self):
         self.day_count = 0
@@ -27,7 +37,7 @@ class GameModel:
         self.simulated = False
         self.player_moved = False
 
-        self.player_iterator = itertools.cycle[tuple[int, Player]](enumerate([]))
+        self.player_iterator: cycle[tuple[int, Player]] = cycle(enumerate([]))
         self.players_dict: dict[str, Player] = {}
 
         self.calendar: list[str] = []
@@ -298,10 +308,10 @@ class GameModel:
         self.status = GameStatus.COMPLETED
         self.day_count = 0
         self.current_player = None
-        self.player_iterator = itertools.cycle(enumerate([]))
+        self.player_iterator = cycle(enumerate([]))
         await get_event_manager().broadcast_event("game.ended", {})
 
-    @in_progress("Game has already started.")
+    @in_progress_async("Game has already started.")
     async def start_game(self):        
         if not self.players_dict:
             raise RuntimeError("Cannot start game without players.")
@@ -312,7 +322,7 @@ class GameModel:
         
         self.status = GameStatus.IN_PROGRESS
         self.game_history = []
-        self.player_iterator = itertools.cycle(enumerate(self.players_dict.values()))
+        self.player_iterator = cycle(enumerate(self.players_dict.values()))
         await self.set_next_current_player()
 
     async def stop_game(self):
