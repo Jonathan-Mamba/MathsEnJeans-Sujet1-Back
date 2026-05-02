@@ -45,7 +45,9 @@ async def add_player(params: PlayerCreate, controller: ControllerDep, event_mana
 async def update_player(params: PlayerUpdate, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.modify_player(params.id, params.name, params.position)
-        await event_manager.broadcast_event("game.player.modified", {"player": params.model_dump()})
+        await event_manager.broadcast_event("game.player.modified", {
+            "player": [p for p in await controller.get_players() if p.id == params.id][0]
+        })
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return "Player updated successfully."

@@ -116,11 +116,36 @@ class GameModel:
         self.squares.add(square)
 
     @in_progress("Cannot modify squares after the game has started.")
+    def modify_square(self, old_name: str, new_name: str):
+        if old_name not in self.squares:
+            raise RuntimeError("Square not found.")
+        if new_name in self.squares:
+            raise RuntimeError("Square already exists.")
+        if new_name.strip() == "":
+            raise RuntimeError("Square name cannot be empty.")
+        for player in self.players_dict.values():
+            if player.position == old_name:
+                player.position = new_name
+        for route in self.get_connected_routes(old_name):
+            self.routes.remove(route)
+            self.routes.add(Route(
+                first_end=new_name if route.first_end == old_name else route.first_end,
+                second_end=new_name if route.second_end == old_name else route.second_end,
+                type=route.type
+            ))
+        if self.castle_square == old_name:
+            self.castle_square = new_name
+        self.squares.remove(old_name)
+        self.squares.add(new_name)
+
+    @in_progress("Cannot modify squares after the game has started.")
     def remove_square(self, square: str):
         if square == self.castle_square:
             raise RuntimeError("Cannot remove the castle square.")
         if square not in self.squares:
             raise RuntimeError("Square not found.")
+        if any(player.position == square for player in self.players_dict.values()):
+            raise RuntimeError("Cannot remove a square that has players on it.")
         self.squares.remove(square)
         for route in self.get_connected_routes(square):
             self.routes.remove(route)
@@ -140,6 +165,9 @@ class GameModel:
     
     @in_progress("Cannot modify routes after the game has started.")
     def add_route(self, added_route: Route):
+        if added_route in self.routes:
+            raise RuntimeError("Route already exists.")
+
         bound_routes = self.get_connected_routes(added_route.first_end, added_route.second_end)
         
         if any(r.type == self.route_type_all for r in bound_routes):
@@ -190,6 +218,7 @@ class GameModel:
         for route in list(self.routes):
             if route.type == route_type:
                 self.routes.remove(route)
+        self.calendar = [d for d in self.calendar if d != route_type]
 
     def get_route_type_all(self) -> str:
         return self.route_type_all
@@ -330,8 +359,8 @@ class GameModel:
     def export(self) -> ExportDict:
         return {
             "version": "1.0",
-            "players": [i.model_dump() for i in self.players_dict.values()],
-            "routes": [i.model_dump() for i in self.routes],
+            "players": self.get_players(),
+            "routes": self.get_all_routes(),
             "route_types": list(self.route_types.keys()),
             "route_type_all": self.route_type_all,
             "castle_square": self.castle_square,
@@ -341,11 +370,4 @@ class GameModel:
             "game_history": self.game_history,
             "squares": self.get_squares()
         }
-    
-    def import_data(self, imported_dict: ExportDict) -> None:
-        version = imported_dict['version']
-        if version != "1.0":
-            raise RuntimeError(f"Version '{version}' is not supported.")
-        
-
         

@@ -1,5 +1,4 @@
 import asyncio
-import json
 from typing import AsyncGenerator, Annotated
 from fastapi import Request, Depends
 from fastapi.sse import ServerSentEvent
@@ -24,7 +23,7 @@ class EventManager:
                     event_tuple = await asyncio.wait_for(personal_queue.get(), timeout=1.0)
                 except asyncio.TimeoutError:
                     continue
-                yield ServerSentEvent(event=event_tuple[0], data=json.dumps(event_tuple[1]))
+                yield ServerSentEvent(event=event_tuple[0], data=event_tuple[1])
         finally:
             self._subscribers.discard(personal_queue) 
 

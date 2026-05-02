@@ -3,6 +3,7 @@ import uuid
 import pydantic
 import typing
 import random
+import re
 
 class GameStatus(enum.StrEnum):
     NOT_STARTED = "not_started"
@@ -11,6 +12,9 @@ class GameStatus(enum.StrEnum):
 
 def get_random_color() -> str:
     return f"#{random.randint(0, 0xFFFFFF).to_bytes(3).hex().upper()}"
+
+def is_valid_hex_color(s: str) -> bool:
+    return bool(re.fullmatch(r"#[0-9A-Fa-f]{6}", s))
 
 class Route(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(frozen=True)
@@ -38,26 +42,15 @@ class StatusDict(typing.TypedDict):
     current_player: Player | None
     current_day_type: str | None
 
-class PlayerDict(typing.TypedDict):
-    id: str
-    name: str
-    color: str
-    position: str
-
-class RouteDict(typing.TypedDict):
-    first_end: str
-    second_end: str
-    type: str
-
 class GameHistoryEntry(typing.TypedDict):
     day_type: str
     moves: list[tuple[str, str, str]]  # List of (player_id, from_square, to_square)
 
 class ExportDict(typing.TypedDict):
     version: str
-    players: list[PlayerDict | dict]
+    players: list[Player]
     calendar: list[str]
-    routes: list[RouteDict | dict]
+    routes: list[Route]
     route_types: list[str]
     route_type_all: str
     route_colors: dict[str, str]
@@ -65,4 +58,3 @@ class ExportDict(typing.TypedDict):
     castle_square: str
     game_history: list[GameHistoryEntry]
     squares: list[str]
-

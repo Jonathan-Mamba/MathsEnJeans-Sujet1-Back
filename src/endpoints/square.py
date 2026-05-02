@@ -9,6 +9,10 @@ from src.event_manager import EventManagerDep
 class SquareCreate(BaseModel):
     name: str
 
+class SquareModify(BaseModel):
+    old_name: str
+    new_name: str
+
 
 router = APIRouter(prefix="/squares", tags=["squares"])
 
@@ -31,11 +35,27 @@ async def add_square(params: SquareCreate, controller: ControllerDep, event_mana
 
 
 @rate_limit
+@router.put("/", summary="Modify a square's name")
+async def modify_square(params: SquareModify, controller: ControllerDep, event_manager: EventManagerDep):
+    try:        
+        await controller.modify_square(params.old_name, params.new_name)
+        await event_manager.broadcast_event("game.square.modified", {
+            "old_name": params.old_name, 
+            "new_name": params.new_name, 
+        })
+    except RuntimeError as e:
+        raise fastapi.HTTPException(400, str(e))
+    return "Square modified successfully."
+
+@rate_limit
 @router.delete("/", summary="Remove a square")
 async def remove_square(params: SquareCreate, controller: ControllerDep, event_manager: EventManagerDep):
     try:
         await controller.remove_square(params.name)
-        await event_manager.broadcast_event("game.square.removed", {"name": params.name})
+        await event_manager.broadcast_event("game.square.removed", {
+            "name": params.name, 
+            "routes": await controller.get_all_routes()
+        })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Square removed successfully."

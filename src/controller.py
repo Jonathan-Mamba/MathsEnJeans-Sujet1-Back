@@ -56,7 +56,16 @@ class Controller:
             return self._game_model.game_status()
     
     async def start_game(self):
-        async with self._game_lock:
+        locks = [
+            self._game_lock,
+            self._calendar_lock,
+            self._players_lock,
+            self._routes_lock,
+            self._squares_lock
+        ]
+        async with AsyncExitStack() as stack:
+            for lock in locks:
+                await stack.enter_async_context(lock)
             self._game_model.start_game()
 
     async def move_player(self, player_id: str, new_position: str):
@@ -68,7 +77,10 @@ class Controller:
             self._game_model.simulate_game()
 
     async def get_castle_square(self) -> str:
-        async with self._game_lock:
+        locks = [self._game_lock, self._squares_lock]
+        async with AsyncExitStack() as stack:
+            for lock in locks:
+                await stack.enter_async_context(lock)
             return self._game_model.castle_square
     
     async def stop_game(self):
@@ -105,8 +117,18 @@ class Controller:
         async with self._squares_lock:    
             self._game_model.add_square(square)
 
+    async def modify_square(self, old_square: str, new_square: str):
+        locks = [self._players_lock, self._routes_lock, self._squares_lock]
+        async with AsyncExitStack() as stack:
+            for lock in locks:
+                await stack.enter_async_context(lock)
+            self._game_model.modify_square(old_square, new_square)
+
     async def remove_square(self, square: str):
-        async with self._squares_lock:
+        locks = [self._players_lock, self._routes_lock, self._squares_lock]
+        async with AsyncExitStack() as stack:
+            for lock in locks:
+                await stack.enter_async_context(lock)
             self._game_model.remove_square(square)
 
     # Route methods
@@ -132,7 +154,10 @@ class Controller:
             self._game_model.add_route_type(route_type, color)
 
     async def remove_route_type(self, route_type: str):
-        async with self._routes_lock:
+        locks = [self._calendar_lock, self._routes_lock]
+        async with AsyncExitStack() as stack:
+            for lock in locks:
+                await stack.enter_async_context(lock)
             self._game_model.remove_route_type(route_type)
 
     async def get_route_type_all(self) -> str:
