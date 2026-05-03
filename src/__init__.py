@@ -3,8 +3,6 @@ import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-import pathlib
-import sys
 from src.endpoints import calendar, game, player, route, square, misc
 from src.rate_limiter import rate_limit
 

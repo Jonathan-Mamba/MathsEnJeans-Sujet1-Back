@@ -13,7 +13,7 @@ class EventManager:
             await queue.put((event_type, data))
     
     async def event_generator(self, request: Request) -> AsyncGenerator[ServerSentEvent, None]:
-        personal_queue = asyncio.Queue[tuple[str, dict]]()
+        personal_queue = asyncio.Queue()
         self._subscribers.add(personal_queue)
         try:
             while True:

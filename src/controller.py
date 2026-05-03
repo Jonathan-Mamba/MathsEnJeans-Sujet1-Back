@@ -46,10 +46,7 @@ class Controller:
 
     # Game methods
     async def game_status(self) -> StatusDict:
-        locks = [
-            self._game_lock,
-            self._players_lock,
-        ]
+        locks = [self._game_lock, self._players_lock]
         async with AsyncExitStack() as stack:
             for lock in locks:
                 await stack.enter_async_context(lock)

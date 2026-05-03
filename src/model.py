@@ -113,6 +113,8 @@ class GameModel:
             raise RuntimeError("Square already exists.")
         if square.strip() == "":
             raise RuntimeError("Square name cannot be empty.")
+        if len(self.squares) >= 12:
+            raise RuntimeError("Cannot have more than 12 squares.")
         self.squares.add(square)
 
     @in_progress("Cannot modify squares after the game has started.")
@@ -206,6 +208,8 @@ class GameModel:
             raise RuntimeError("Route type already exists.")
         if route_type.strip() == "":
             raise RuntimeError("Route type cannot be empty.")
+        if len(self.route_types) >= 20:
+            raise RuntimeError("Cannot have more than 20 route types.")
         self.route_types[route_type] = color if color else get_random_color()
 
     @in_progress("Cannot modify route types after the game has started.")
@@ -231,6 +235,8 @@ class GameModel:
     def add_day(self, day: str):
         if day not in self.get_day_types():
             raise RuntimeError("Invalid day type.")
+        if len(self.calendar) >= 99:
+            raise RuntimeError("Cannot have more than 99 days in the calendar.")
         self.calendar.append(day)
     
     @in_progress("Cannot modify calendar after the game has started.")
