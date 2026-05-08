@@ -29,7 +29,7 @@ async def move_player(move: MovePlayer, controller: ControllerDep, event_manager
             "position": move.new_position, 
             "status": await controller.game_status(),
             "history": await controller.get_game_history()
-            })
+        })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))
     return "Player moved successfully."

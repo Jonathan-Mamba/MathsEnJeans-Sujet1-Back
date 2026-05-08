@@ -51,7 +51,6 @@ class ExportDict(typing.TypedDict):
     players: list[Player]
     calendar: list[str]
     routes: list[Route]
-    route_types: list[str]
     route_type_all: str
     route_colors: dict[str, str]
     game_status: StatusDict

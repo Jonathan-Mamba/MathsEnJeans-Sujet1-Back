@@ -33,7 +33,7 @@ class GameModel:
         self.route_type_all = "Tout"
 
         self.castle_square = "Palais"
-        self.squares = {"Entrepôts royaux", "Quartier des artisants", "Quartier des marchands", "Salle des gardes", "Palais"}
+        self.squares: list[str] = ["Entrepôts royaux", "Quartier des artisants", "Quartier des marchands", "Salle des gardes", "Palais"]
 
 
     def import_preset(self):
@@ -115,7 +115,7 @@ class GameModel:
             raise RuntimeError("Square name cannot be empty.")
         if len(self.squares) >= 12:
             raise RuntimeError("Cannot have more than 12 squares.")
-        self.squares.add(square)
+        self.squares.append(square)
 
     @in_progress("Cannot modify squares after the game has started.")
     def modify_square(self, old_name: str, new_name: str):
@@ -138,7 +138,7 @@ class GameModel:
         if self.castle_square == old_name:
             self.castle_square = new_name
         self.squares.remove(old_name)
-        self.squares.add(new_name)
+        self.squares.append(new_name)
 
     @in_progress("Cannot modify squares after the game has started.")
     def remove_square(self, square: str):
@@ -367,7 +367,6 @@ class GameModel:
             "version": "1.0",
             "players": self.get_players(),
             "routes": self.get_all_routes(),
-            "route_types": list(self.route_types.keys()),
             "route_type_all": self.route_type_all,
             "castle_square": self.castle_square,
             "route_colors": self.route_types,

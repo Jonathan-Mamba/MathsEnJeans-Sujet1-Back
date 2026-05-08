@@ -1,32 +1,33 @@
 import fastapi
 from fastapi import HTTPException
 from src.controller import ControllerDep
-from src.rate_limiter import rate_limit
-from typing import List
 from pydantic import BaseModel
+from src.rate_limiter import rate_limit
 from src.event_manager import EventManagerDep
 
 
 class DayCreate(BaseModel):
     day_type: str
  
-
 class DayUpdate(BaseModel):
     day_number: int
     day_type: str
+
+class DayRemove(BaseModel):
+    day_number: int
 
 
 router = fastapi.APIRouter(prefix="/calendar", tags=["calendar"])
 
 
 @rate_limit
-@router.get("/", response_model=List[str], summary="Get the calendar, as a list of day types")
+@router.get("/", response_model=list[str], summary="Get the calendar, as a list of day types")
 async def get_calendar(controller: ControllerDep):
     return await controller.get_calendar()
 
 
 @rate_limit
-@router.get("/day_types", response_model=List[str], summary="Get all day types")
+@router.get("/day_types", response_model=list[str], summary="Get all day types")
 async def get_day_types(controller: ControllerDep):
     return await controller.get_day_types()
 
@@ -53,11 +54,11 @@ async def modify_day(day: DayUpdate, controller: ControllerDep, event_manager: E
     
 
 @rate_limit
-@router.delete("/{day_number}", summary="Remove a day")
-async def delete_day(day_number: int, controller: ControllerDep, event_manager: EventManagerDep ):
+@router.delete("/", summary="Remove a day")
+async def delete_day(params: DayRemove, controller: ControllerDep, event_manager: EventManagerDep ):
     try:
-        await controller.remove_day(day_number)
-        await event_manager.broadcast_event("game.calendar.removed", {"number": day_number})
+        await controller.remove_day(params.day_number)
+        await event_manager.broadcast_event("game.calendar.removed", {"number": params.day_number})
     except IndexError as e:
         raise HTTPException(400, str(e))
     return "Day removed successfully."
