@@ -1,7 +1,7 @@
 import random
 from functools import wraps
 from itertools import cycle
-from src.util import Player, Route, GameStatus, StatusDict, ExportDict, get_random_color, GameHistoryEntry  
+from src.util import Player, Route, GameStatus, StatusDict, ExportData, get_random_color, GameHistoryEntry, normalize_export_dict 
 
 
 def in_progress(error_message: str):
@@ -22,7 +22,6 @@ class GameModel:
         self.status = GameStatus.NOT_STARTED
         self.game_history: list[GameHistoryEntry] = []
         self.simulated = False
-        self.player_moved = False
 
         self.player_iterator: cycle[tuple[int, Player]] = cycle(enumerate([]))
         self.players_dict: dict[str, Player] = {}
@@ -63,7 +62,7 @@ class GameModel:
     def add_player(self, player: Player):
         if player.name.strip() == "":
             raise RuntimeError("Player name cannot be empty.")
-        if player.position is None:
+        if player.position is None or player.position not in self.squares:
             raise RuntimeError("Player must have a valid starting position.")
         player_names = {p.name for p in self.players_dict.values()}
         if player.name in player_names:
@@ -167,6 +166,12 @@ class GameModel:
     
     @in_progress("Cannot modify routes after the game has started.")
     def add_route(self, added_route: Route):
+        if added_route.first_end not in self.squares or added_route.second_end not in self.squares:
+            raise RuntimeError("Invalid route ends.")
+        
+        if added_route.type not in self.route_types:
+            raise RuntimeError("Invalid route type.")
+
         if added_route in self.routes:
             raise RuntimeError("Route already exists.")
 
@@ -201,28 +206,6 @@ class GameModel:
     # Route types methods ---------------------------------------------------------------
     def get_route_types(self) -> dict[str, str]:
         return self.route_types
-
-    @in_progress("Cannot modify route types after the game has started.")
-    def add_route_type(self, route_type: str, color: str | None = None):
-        if route_type in self.route_types:
-            raise RuntimeError("Route type already exists.")
-        if route_type.strip() == "":
-            raise RuntimeError("Route type cannot be empty.")
-        if len(self.route_types) >= 20:
-            raise RuntimeError("Cannot have more than 20 route types.")
-        self.route_types[route_type] = color if color else get_random_color()
-
-    @in_progress("Cannot modify route types after the game has started.")
-    def remove_route_type(self, route_type: str):
-        if route_type not in self.route_types:
-            raise RuntimeError("Route type not found.")
-        if route_type == self.route_type_all:
-            raise RuntimeError("Cannot remove the 'all' route type.")
-        del self.route_types[route_type]
-        for route in list(self.routes):
-            if route.type == route_type:
-                self.routes.remove(route)
-        self.calendar = [d for d in self.calendar if d != route_type]
 
     def get_route_type_all(self) -> str:
         return self.route_type_all
@@ -313,7 +296,6 @@ class GameModel:
 
         self.add_to_history(player.id, player.position, new_position)
         player.position = new_position
-        self.player_moved = True
         self.set_next_current_player()
 
     def at_new_turn(self):
@@ -321,10 +303,8 @@ class GameModel:
         if (
             self.day_count > len(self.calendar) 
             or all(player.position == self.castle_square for player in self.players_dict.values()) 
-            or (not self.player_moved and self.day_count > 1)
         ):
             self.at_game_end()
-        self.player_moved = False
 
     def at_game_end(self):
         self.status = GameStatus.COMPLETED
@@ -362,17 +342,39 @@ class GameModel:
                self.at_new_turn()
 
     # other methods ----------------------------------------------------------------------
-    def export(self) -> ExportDict:
-        return {
-            "version": "1.0",
-            "players": self.get_players(),
-            "routes": self.get_all_routes(),
-            "route_type_all": self.route_type_all,
-            "castle_square": self.castle_square,
-            "route_colors": self.route_types,
-            "game_status": self.game_status(),
-            "calendar": self.calendar,
-            "game_history": self.game_history,
-            "squares": self.get_squares()
-        }
+    def export(self) -> ExportData:
+        return ExportData(
+            version='1.0',
+            players=self.get_players(),
+            calendar=self.get_calendar(),
+            routes=self.get_all_routes(),
+            route_type_all=self.get_route_type_all(),
+            route_colors=self.get_route_types(),
+            castle_square=self.get_castle_square(),
+            squares=self.get_squares(),
+            game_status=self.game_status(),
+            game_history=self.game_history
+        )
+    
+    @in_progress("Cannot import game data while the game is being played.")    
+    def import_data(self, data: ExportData) -> 'GameModel':
+        new_model = GameModel()
+        data = normalize_export_dict(data)
         
+        new_model.route_type_all = data.route_type_all
+        new_model.route_types = data.route_colors
+        new_model.castle_square = data.castle_square
+
+        for square in data.squares:
+            new_model.add_square(square)
+
+        for day in data.calendar:
+            new_model.add_day(day)
+
+        for player in data.players:
+            new_model.add_player(player)
+        
+        for route in data.routes:
+            new_model.add_route(route)
+
+        return new_model

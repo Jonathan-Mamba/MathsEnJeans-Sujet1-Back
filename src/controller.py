@@ -1,4 +1,4 @@
-from src.util import Player, Route, StatusDict, GameHistoryEntry, ExportDict
+from src.util import Player, Route, StatusDict, GameHistoryEntry, ExportData
 from src.model import GameModel
 from fastapi import Depends
 from typing import Annotated
@@ -16,7 +16,7 @@ class Controller:
         self._squares_lock = Lock()
         self._game_lock = Lock()
 
-    async def export_model(self) -> ExportDict:
+    async def export_model(self) -> ExportData:
         locks = [
             self._game_lock,
             self._calendar_lock,
@@ -43,6 +43,21 @@ class Controller:
             for lock in locks:
                 await stack.enter_async_context(lock)
             self._game_model.import_preset()
+
+    async def import_data(self, data: ExportData):
+        locks = [
+            self._game_lock,
+            self._calendar_lock,
+            self._players_lock,
+            self._routes_lock,
+            self._squares_lock
+        ]
+        async with AsyncExitStack() as stack:
+            for lock in locks:
+                await stack.enter_async_context(lock)
+            new_model = self._game_model.import_data(data)
+            self._game_model = new_model
+        
 
     # Game methods
     async def game_status(self) -> StatusDict:
@@ -145,17 +160,6 @@ class Controller:
     async def get_route_types(self) -> dict[str, str]:
         async with self._routes_lock:
             return self._game_model.get_route_types()
-
-    async def add_route_type(self, route_type: str, color: str | None = None):
-        async with self._routes_lock:
-            self._game_model.add_route_type(route_type, color)
-
-    async def remove_route_type(self, route_type: str):
-        locks = [self._calendar_lock, self._routes_lock]
-        async with AsyncExitStack() as stack:
-            for lock in locks:
-                await stack.enter_async_context(lock)
-            self._game_model.remove_route_type(route_type)
 
     async def get_route_type_all(self) -> str:
         async with self._routes_lock:
