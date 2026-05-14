@@ -1,7 +1,7 @@
 import random
 from functools import wraps
 from itertools import cycle
-from src.util import Player, Route, GameStatus, StatusDict, ExportData, get_random_color, GameHistoryEntry, normalize_export_dict 
+from src.util import Player, Route, GameStatus, StatusDict, ExportData, GameHistoryEntry
 
 
 def in_progress(error_message: str):
@@ -28,7 +28,7 @@ class GameModel:
 
         self.calendar: list[str] = []
         self.routes: set[Route] = set()
-        self.route_types = {i: get_random_color() for i in ["Livraison", "Doléances", "Marchands", "Labeur", "Tout"]}
+        self.route_types: tuple[str, str, str, str, str] = ("Livraison", "Doléances", "Marchands", "Labeur", "Tout")
         self.route_type_all = "Tout"
 
         self.castle_square = "Palais"
@@ -204,8 +204,8 @@ class GameModel:
         return {route for route in routes if route.type == route_type or route.type == self.route_type_all}
     
     # Route types methods ---------------------------------------------------------------
-    def get_route_types(self) -> dict[str, str]:
-        return self.route_types
+    def get_route_types(self) -> list[str]:
+        return list(self.route_types)
 
     def get_route_type_all(self) -> str:
         return self.route_type_all
@@ -237,7 +237,7 @@ class GameModel:
             raise IndexError("Day number out of range.")
         
     def get_day_types(self) -> list[str]:
-        return [route_type for route_type in self.route_types.keys() if route_type != self.route_type_all]
+        return [route_type for route_type in self.route_types if route_type != self.route_type_all]
 
     # Game methods ----------------------------------------------------------------------
     def game_status(self) -> StatusDict:
@@ -349,7 +349,6 @@ class GameModel:
             calendar=self.get_calendar(),
             routes=self.get_all_routes(),
             route_type_all=self.get_route_type_all(),
-            route_colors=self.get_route_types(),
             castle_square=self.get_castle_square(),
             squares=self.get_squares(),
             game_status=self.game_status(),
@@ -359,10 +358,32 @@ class GameModel:
     @in_progress("Cannot import game data while the game is being played.")    
     def import_data(self, data: ExportData) -> 'GameModel':
         new_model = GameModel()
-        data = normalize_export_dict(data)
+
+        # check data integrity
+        squares = self.get_squares()
+        new_model.squares = []
+    
+        for player in data.players:
+            if player.position not in squares:
+                player.position = data.castle_square
         
+        valid_routes = [
+            route for route in data.routes
+            if (route.first_end in squares 
+                and route.second_end in squares
+                and route.type in self.route_types)
+        ]
+        data.routes = valid_routes
+        
+        if data.castle_square not in squares and data.squares:
+            data.castle_square = data.squares[0]
+        
+        data.calendar = [
+            day for day in data.calendar
+            if day in self.get_day_types()
+        ]
+        # apply data to new model
         new_model.route_type_all = data.route_type_all
-        new_model.route_types = data.route_colors
         new_model.castle_square = data.castle_square
 
         for square in data.squares:

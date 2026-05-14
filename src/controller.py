@@ -157,7 +157,7 @@ class Controller:
             self._game_model.remove_route(route)
 
     # Route type methods
-    async def get_route_types(self) -> dict[str, str]:
+    async def get_route_types(self) -> list[str]:
         async with self._routes_lock:
             return self._game_model.get_route_types()
 

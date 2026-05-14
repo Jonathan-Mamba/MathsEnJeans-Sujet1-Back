@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from src.util import Route, get_random_color
+from src.util import Route
 from src.controller import ControllerDep
 from src.rate_limiter import rate_limit
 from src.event_manager import EventManagerDep
@@ -48,15 +48,3 @@ async def remove_route(params: RouteCreate, controller: ControllerDep, event_man
         raise HTTPException(status_code=400, detail=str(e))
     return "Route removed successfully."
 
-
-# Route types endpoints
-@rate_limit
-@router.get("/types", summary="Get all route types, and their colors", response_model=dict[str, str])
-async def get_route_types(controller: ControllerDep):
-    return await controller.get_route_types()
-
-
-@rate_limit
-@router.get("/types/all", summary="Get the name of route type that contains all of the routes.", response_model=str)
-async def get_route_type_all(controller: ControllerDep):
-    return await controller.get_route_type_all()
