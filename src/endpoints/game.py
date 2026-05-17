@@ -70,7 +70,8 @@ async def simulate_game(controller: ControllerDep, event_manager: EventManagerDe
         await controller.simulate_game()
         await event_manager.broadcast_event("game.simulated", {
             "status": await controller.game_status(),
-            "history": await controller.get_game_history()
+            "history": await controller.get_game_history(),
+            "players": await controller.get_players()
         })
     except RuntimeError as e:
         raise fastapi.HTTPException(400, str(e))

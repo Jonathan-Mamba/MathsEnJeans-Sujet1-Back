@@ -2,8 +2,6 @@ import enum
 import uuid
 import pydantic
 import typing
-import random
-import re
 
 
 class GameStatus(enum.StrEnum):
@@ -55,6 +53,3 @@ class ExportData(pydantic.BaseModel):
     castle_square: str = "Palais"
     game_history: list[GameHistoryEntry] | None
     squares: list[str] = pydantic.Field(default_factory=lambda: [])
-
-
-
