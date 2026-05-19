@@ -34,7 +34,7 @@ async def stream_items(request: Request, event_manager: EventManagerDep) -> Asyn
         yield event
 
 
-@rate_limit
-@router.post("/preset", summary="Load a preset configuration")
-async def load_preset(controller: ControllerDep):
-    await controller.import_preset()
+# @rate_limit
+# @router.post("/preset", summary="Load a preset configuration")
+# async def load_preset(controller: ControllerDep):
+#     await controller.import_preset()

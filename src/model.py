@@ -28,7 +28,7 @@ class GameModel:
 
         self.calendar: list[str] = []
         self.routes: set[Route] = set()
-        self.route_types: tuple[str, str, str, str, str] = ("Livraison", "Doléances", "Marchands", "Labeur", "Tout")
+        self.route_types: tuple[str, str, str, str, str] = ("Livraison", "Doléances", "Marchands", "Spécialisée", "Tout")
         self.route_type_all = "Tout"
 
         self.castle_square = "Palais"
@@ -360,7 +360,7 @@ class GameModel:
         new_model = GameModel()
 
         # check data integrity
-        squares = self.get_squares()
+        squares = data.squares
         new_model.squares = []
     
         for player in data.players:
