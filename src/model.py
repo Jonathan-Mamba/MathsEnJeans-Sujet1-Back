@@ -32,7 +32,7 @@ class GameModel:
         self.route_type_all = "Tout"
 
         self.castle_square = "Palais"
-        self.squares: list[str] = ["Entrepôts royaux", "Quartier des artisants", "Quartier des marchands", "Salle des gardes", "Palais"]
+        self.squares: list[str] = ["Quartiers des marchands", "Entrepôts royaux", "Quartier des artisants", "Salle des gardes", "Palais"]
 
 
     def import_preset(self):
